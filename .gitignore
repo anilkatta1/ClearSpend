@@ -1,0 +1,33 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# Local infrastructure and secrets
+*.log
+*.pid
+*.sqlite3
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# IDE
+.idea/
+.vscode/
+*.swp

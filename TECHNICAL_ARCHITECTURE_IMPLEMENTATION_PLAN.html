@@ -1,0 +1,2533 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ClearSpend technical architecture and implementation plan">
+  <title>ClearSpend — Technical Architecture and Implementation Plan</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --text: #172033;
+      --muted: #5b6476;
+      --line: #d8deea;
+      --accent: #2854c5;
+      --accent-soft: #eaf0ff;
+      --code: #f1f4f9;
+      --shadow: 0 16px 45px rgba(25, 40, 70, 0.09);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.65 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 32px auto;
+      padding: clamp(24px, 5vw, 72px);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    h1, h2, h3, h4 { line-height: 1.24; scroll-margin-top: 24px; }
+    h1 { font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -0.035em; margin-top: 0; }
+    h2 { margin-top: 3rem; padding-bottom: .55rem; border-bottom: 1px solid var(--line); }
+    h3 { margin-top: 2rem; }
+    p, li { max-width: 82ch; }
+    a { color: var(--accent); text-decoration-thickness: .08em; text-underline-offset: .16em; }
+    blockquote {
+      margin: 1.5rem 0;
+      padding: 1rem 1.25rem;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+    code {
+      padding: .12em .35em;
+      border-radius: 5px;
+      background: var(--code);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .9em;
+    }
+    pre {
+      overflow-x: auto;
+      padding: 1rem 1.15rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--code);
+    }
+    pre code { padding: 0; background: transparent; }
+    table { width: 100%; margin: 1.5rem 0; border-collapse: collapse; font-size: .94rem; }
+    th, td { padding: .7rem .8rem; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--accent-soft); }
+    hr { margin: 3rem 0; border: 0; border-top: 1px solid var(--line); }
+    input[type="checkbox"] { width: 1rem; height: 1rem; margin-right: .45rem; }
+    .mermaid { overflow-x: auto; margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .top-link { position: fixed; right: 18px; bottom: 18px; padding: .55rem .8rem; border-radius: 999px; background: var(--accent); color: white; text-decoration: none; box-shadow: var(--shadow); }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0d1220; --surface: #151c2d; --text: #edf1fa; --muted: #b3bdd1; --line: #34405a; --accent: #9ab6ff; --accent-soft: #222f50; --code: #202a3e; }
+      .mermaid { background: #fff; }
+    }
+    @media print {
+      body { background: white; color: black; font-size: 10.5pt; }
+      main { width: 100%; margin: 0; padding: 0; border: 0; box-shadow: none; }
+      .top-link { display: none; }
+      h2, h3 { break-after: avoid; }
+      table, pre, blockquote { break-inside: avoid; }
+      a { color: black; }
+    }
+  </style>
+</head>
+<body id="top">
+  <main><h1 id="clearspend-technical-architecture-and-implementation-plan">ClearSpend — Technical Architecture and Implementation Plan<a class="headerlink" href="#clearspend-technical-architecture-and-implementation-plan" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Status:</strong> Architecture baseline for implementation<br />
+<strong>Prepared:</strong> September 7, 2026 (IST)<br />
+<strong>Delivery deadline:</strong> September 15, 2026 EOD IST<br />
+<strong>Accountable technical owner:</strong> Anil Katta — Architect / Engineer<br />
+<strong>Companion document:</strong> <code>PRODUCT_ARCHITECTURE_AND_EXECUTION_PLAN.md</code></p>
+</blockquote>
+<hr />
+<h2 id="1-executive-architecture-decision">1. Executive architecture decision<a class="headerlink" href="#1-executive-architecture-decision" title="Permanent link">&para;</a></h2>
+<p>Build ClearSpend as a <strong>two-application monorepo</strong>: a Next.js/TypeScript frontend running on Node.js and an authoritative FastAPI/Python backend. The backend and a separate Procrastinate worker share PostgreSQL, private object storage, domain modules, and a bounded LangGraph AI workflow.</p>
+<p>The deployable product will support one bounded workflow:</p>
+<blockquote>
+<p>Employee submits a reimbursement → deterministic and AI-assisted policy assessment → human reviewer decides → append-only evidence and audit export.</p>
+</blockquote>
+<p>The system is deliberately not a general finance agent. It does not issue cards, move money, change accounting records, autonomously publish policies, or autonomously make a final reimbursement decision.</p>
+<h3 id="recommended-implementation-stack">Recommended implementation stack<a class="headerlink" href="#recommended-implementation-stack" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Next.js 16 + React + TypeScript for the frontend only; Node.js is the frontend build/runtime, not the finance-domain backend.</li>
+<li>FastAPI + Python for the authoritative <code>/api/v1</code> backend, authentication/authorization enforcement, domain services, and OpenAPI 3.1 contract.</li>
+<li>PostgreSQL for transactional state, tenancy, policy versions, Procrastinate jobs, outbox records, and audit events.</li>
+<li>SQLAlchemy 2.x + Psycopg 3 for data access and Alembic for migrations.</li>
+<li>FastAPI/Pydantic dependencies for application sessions, tenant resolution, and role enforcement. The frontend consumes the same-origin API and does not become a second authorization authority.</li>
+<li>Private S3-compatible storage for receipts.</li>
+<li>Procrastinate with its asynchronous Psycopg connector for PostgreSQL-backed assessment jobs, locks, retries, scheduling, and worker concurrency; no Redis or Kafka.</li>
+<li>A custom typed Python deterministic expense-rule evaluator for objective checks; it is not OPA/Rego and does not make the final decision.</li>
+<li>LangGraph <code>StateGraph</code> inside the Procrastinate task for bounded assessment orchestration, branching, and safe fallbacks; it is not an autonomous multi-agent swarm or the business system of record.</li>
+<li>OpenAI Responses API using <code>gpt-5.6-terra</code>, Structured Outputs, <code>store: false</code>, no tools, and low reasoning as the initial managed AI option.</li>
+<li>PostgreSQL full-text search for policy-section retrieval; no vector database in the MVP.</li>
+<li>OpenTelemetry instrumentation exported to Grafana Cloud or an equivalent backend.</li>
+<li>Pytest, Hypothesis, HTTPX/respx, Testcontainers, Playwright, and k6 for backend unit/property/contract/integration, end-to-end, and load testing. Vitest remains optional for isolated frontend logic.</li>
+<li>GitHub Actions for blocking CI; Render for separate frontend, FastAPI API, Procrastinate worker, and managed PostgreSQL services.</li>
+</ul>
+<p>The model and provider are configuration, not architecture. The same adapter must support deterministic fake mode and an open-source local path using vLLM with <code>gpt-oss-20b</code>.</p>
+<h3 id="delivery-principle">Delivery principle<a class="headerlink" href="#delivery-principle" title="Permanent link">&para;</a></h3>
+<p>Industrial quality does not mean adding every enterprise technology. For this deadline it means:</p>
+<ul>
+<li>explicit boundaries;</li>
+<li>safe state transitions;</li>
+<li>repeatable deployment;</li>
+<li>traceable decisions;</li>
+<li>complete tests for high-risk paths;</li>
+<li>observable failures;</li>
+<li>evidence that the implemented path matches the claims.</li>
+</ul>
+<hr />
+<h2 id="2-architecture-drivers-and-constraints">2. Architecture drivers and constraints<a class="headerlink" href="#2-architecture-drivers-and-constraints" title="Permanent link">&para;</a></h2>
+<h3 id="business-drivers">Business drivers<a class="headerlink" href="#business-drivers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Driver</th>
+<th>Architectural consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Finance users must trust recommendations.</td>
+<td>Preserve policy citations, model/rule provenance, uncertainty, override, and audit history.</td>
+</tr>
+<tr>
+<td>Customer evidence is required.</td>
+<td>Instrument task time, agreement, override, missing-information loops, and recommendation outcomes.</td>
+</tr>
+<tr>
+<td>Working product is due in eight days.</td>
+<td>Use one monorepo, one Python backend codebase, a separate frontend, and managed infrastructure; avoid microservice proliferation, Kubernetes, Redis, Kafka, and a vector database.</td>
+</tr>
+<tr>
+<td>Product must be original.</td>
+<td>Design the workflow and UI around ClearSpend’s customer wedge; use Ramp only as category research.</td>
+</tr>
+<tr>
+<td>A real customer should care.</td>
+<td>Optimize one complete review workflow instead of broad feature count.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="quality-drivers">Quality drivers<a class="headerlink" href="#quality-drivers" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Safety:</strong> no model output can directly approve, reject, publish policy, or move money.</li>
+<li><strong>Auditability:</strong> every material decision resolves to actor, time, evidence, policy version, and implementation/model version.</li>
+<li><strong>Correctness:</strong> deterministic code owns arithmetic, thresholds, state, authorization, and routing.</li>
+<li><strong>Fail-closed behavior:</strong> missing evidence, invalid output, provider failure, or conflict becomes <code>NEEDS_REVIEW</code>.</li>
+<li><strong>Tenant isolation:</strong> organization scope is derived on the server, never trusted from the browser.</li>
+<li><strong>Reproducibility:</strong> live execution and offline replay are separate, honest commands.</li>
+<li><strong>Observability:</strong> a failure can be found through logs, metrics, traces, and a correlation ID.</li>
+<li><strong>Portability:</strong> provider, storage, telemetry, and deployment use narrow adapters.</li>
+</ol>
+<h3 id="known-constraints">Known constraints<a class="headerlink" href="#known-constraints" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Team size: three, with one accountable engineer.</li>
+<li>Current date: September 7; feature freeze should occur September 12.</li>
+<li>User evidence must be privacy-respecting and anonymized.</li>
+<li>No production banking or client information is required.</li>
+<li>The initial evaluation corpus will be synthetic and small; it cannot justify a universal accuracy claim.</li>
+<li>Cloud pricing, availability, and licenses can change; pin and record what is actually used in the release manifest.</li>
+</ul>
+<hr />
+<h2 id="3-rubric-to-architecture-traceability">3. Rubric-to-architecture traceability<a class="headerlink" href="#3-rubric-to-architecture-traceability" title="Permanent link">&para;</a></h2>
+<p>Create <code>docs/evidence/rubric-matrix.csv</code> before feature work. Every claim must have an artifact and an executable verification path.</p>
+<table>
+<thead>
+<tr>
+<th>Rubric area</th>
+<th>Architecture response</th>
+<th>Required evidence</th>
+<th>Blocking verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Core flow works</td>
+<td>One bounded state machine and three synthetic cases.</td>
+<td>Demo video, E2E trace, deployed URL.</td>
+<td><code>make smoke-live</code></td>
+</tr>
+<tr>
+<td>Architecture/trade-offs</td>
+<td>C4 diagrams, ADRs, module contracts, tool matrix.</td>
+<td>This plan and accepted ADRs.</td>
+<td>Documentation link checker.</td>
+</tr>
+<tr>
+<td>Meaningful risk tests</td>
+<td>Authz, tenancy, idempotency, false approval, citations, provider outage.</td>
+<td>Test report and raw JUnit/eval rows.</td>
+<td><code>make verify</code></td>
+</tr>
+<tr>
+<td>Reproducible deployment</td>
+<td>Pinned image, migrations, seed, environment manifest.</td>
+<td>Clean-checkout log and release digest.</td>
+<td><code>make reproduce-live</code></td>
+</tr>
+<tr>
+<td>Telemetry/failure handling</td>
+<td>OpenTelemetry, health checks, safe fallbacks, runbook.</td>
+<td>Dashboard screenshot and injected-failure trace.</td>
+<td><code>make fault-test</code></td>
+</tr>
+<tr>
+<td>Security/data handling</td>
+<td>Threat model, RBAC, private files, retention, redaction.</td>
+<td>ASVS subset and data-flow record.</td>
+<td>Security test job.</td>
+</tr>
+<tr>
+<td>3–5 real users</td>
+<td>Product events support task-time and decision traces.</td>
+<td>Anonymized observations and exported events.</td>
+<td>Evidence schema validator.</td>
+</tr>
+<tr>
+<td>Business/pricing</td>
+<td>Measured token/call cost and workflow time.</td>
+<td>Cost rows labeled measured/derived/assumption.</td>
+<td><code>make evidence-audit</code></td>
+</tr>
+<tr>
+<td>Roadmap</td>
+<td>Technical risks and evidence gates.</td>
+<td>Now/Next/Later dependency map.</td>
+<td>Manual rubric review.</td>
+</tr>
+<tr>
+<td>Pitch/live narrative</td>
+<td>Stable seeded cases and outage demonstration.</td>
+<td>Demo script and backup.</td>
+<td>Timed rehearsal.</td>
+</tr>
+<tr>
+<td>Individual ownership</td>
+<td>Commit/ADR/test/deploy evidence by owner.</td>
+<td>Engineering evidence index.</td>
+<td>Link/manifest validation.</td>
+</tr>
+<tr>
+<td>Community checkpoints</td>
+<td>Metrics and decisions exported weekly.</td>
+<td>Three posts and responses.</td>
+<td>Manual link check.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="evidence-labels-for-every-number">Evidence labels for every number<a class="headerlink" href="#evidence-labels-for-every-number" title="Permanent link">&para;</a></h3>
+<p>Use exactly one of:</p>
+<ul>
+<li><strong>Measured:</strong> directly observed in telemetry, experiment, or interview.</li>
+<li><strong>Derived:</strong> calculated only from measured values; include formula.</li>
+<li><strong>Scenario assumption:</strong> hypothetical input; include rationale and low/base/high range.</li>
+<li><strong>External reference:</strong> dated authoritative source with access date.</li>
+</ul>
+<p>Never call seeded demo statistics customer evidence. Never call a scripted calculation measured business impact if its inputs are assumptions.</p>
+<hr />
+<h2 id="4-previous-assignment-learnings-converted-into-controls">4. Previous-assignment learnings converted into controls<a class="headerlink" href="#4-previous-assignment-learnings-converted-into-controls" title="Permanent link">&para;</a></h2>
+<p>The earlier grading and critic reviews identified repeatable failure patterns. They become release controls here.</p>
+<table>
+<thead>
+<tr>
+<th>Previous lesson</th>
+<th>ClearSpend control</th>
+<th>Proof artifact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A proxy path is not the literal claimed behavior.</td>
+<td>Run demo, tests, telemetry, and evaluation through the same <code>AssessmentOrchestrator</code> and provider adapter used in deployment.</td>
+<td>Trace IDs linking input → checks → provider attempt → result.</td>
+</tr>
+<tr>
+<td>Post-processed values cannot stand in for original inputs.</td>
+<td>Store original input hash/size separately from normalized fields and provider usage.</td>
+<td>Assessment attempt record.</td>
+</tr>
+<tr>
+<td>Two trials are insufficient.</td>
+<td>For stochastic model cases run at least 5 trials/case; prefer 10 for release-critical ambiguous cases.</td>
+<td>Trial-level eval rows and confidence interval.</td>
+</tr>
+<tr>
+<td>Mutable <code>latest</code> destroys reproducibility.</td>
+<td>Pin dependency lockfile, container digest, prompt version, rule-engine version, model ID/snapshot where available.</td>
+<td><code>release-manifest.json</code>.</td>
+</tr>
+<tr>
+<td>Offline replay is not live reproduction.</td>
+<td>Separate <code>make reproduce-live</code> from <code>make reproduce-offline</code>.</td>
+<td>Both command logs.</td>
+</tr>
+<tr>
+<td><code>$0</code> API spend is not zero resource cost.</td>
+<td>Record API tokens/cost and local CPU/GPU/wall time; state the boundary.</td>
+<td><code>cost-ledger.csv</code>.</td>
+</tr>
+<tr>
+<td>A simulated guard is weaker than a real failing request.</td>
+<td>Commit sanitized adversarial/invalid cases and replay them through the real endpoint and worker.</td>
+<td>Fault/eval fixtures plus traces.</td>
+</tr>
+<tr>
+<td>Corrective actions need ownership and dates.</td>
+<td>Every risk item has owner, due date, verification, alert/rollback, closure criterion.</td>
+<td>Risk register.</td>
+</tr>
+<tr>
+<td>Missing test rows can make a gate pass.</td>
+<td>Reconcile results against a pinned case manifest; missing, duplicate, extra, malformed, or unknown rows fail.</td>
+<td>Gate unit tests.</td>
+</tr>
+<tr>
+<td>Wrapper errors can be masked.</td>
+<td>CI preserves native exit codes and runs the release gate as a separate blocking step; artifacts upload with <code>if: always()</code>.</td>
+<td>Deliberately failing CI run.</td>
+</tr>
+<tr>
+<td>Keyword checks can approve wrong semantics.</td>
+<td>Use deterministic expected invariants, structured fields, citation grounding, contradiction tests, and human labels—not substring-only scoring.</td>
+<td>Counterexample tests.</td>
+</tr>
+<tr>
+<td>Tool name alone does not prove trajectory.</td>
+<td>Current model receives no tools. If tools are later added, test arguments, order, count, results, side effects, and idempotency.</td>
+<td>ADR and prohibited-tool assertion.</td>
+</tr>
+<tr>
+<td>Manually raised timeout is not timeout enforcement.</td>
+<td>Test a server that exceeds the configured deadline; verify abort, lease cleanup, retry count, wall time, and fallback.</td>
+<td>Real timeout integration trace.</td>
+</tr>
+<tr>
+<td>Two frameworks sharing one oracle are not independent evidence.</td>
+<td>Combine deterministic invariants, labeled human review, and provider contract validation; disclose shared dependencies.</td>
+<td>Evaluation methodology.</td>
+</tr>
+<tr>
+<td>Duplicated configuration drifts.</td>
+<td>One versioned <code>release-policy.yaml</code> is loaded by gate, tests, docs generation, and CI.</td>
+<td>Configuration-consistency test.</td>
+</tr>
+<tr>
+<td>License identifiers alone are incomplete.</td>
+<td>Record package, version, repository, SPDX ID, exact license file path/hash, and notice obligation.</td>
+<td>SBOM/license manifest.</td>
+</tr>
+<tr>
+<td>Secret scanning needs broad coverage.</td>
+<td>Gitleaks, explicit excluded-file tests, artifact scan, and clean-package inspection.</td>
+<td>Security CI artifacts.</td>
+</tr>
+<tr>
+<td>AI use summaries are not fully auditable.</td>
+<td>Record material prompts/instructions, tool/model, accepted/rejected suggestions, verification, token/cost when available.</td>
+<td><code>docs/ai-disclosure.md</code>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-standards-baseline">5. Standards baseline<a class="headerlink" href="#5-standards-baseline" title="Permanent link">&para;</a></h2>
+<p>We use standards as a verification checklist, not as unsupported certification claims.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Baseline</th>
+<th>MVP application</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Architecture</td>
+<td>C4 Model + Architecture Decision Records</td>
+<td>Context/container/component diagrams and numbered ADRs.</td>
+</tr>
+<tr>
+<td>API</td>
+<td>OpenAPI 3.1 and RFC 9457 problem details</td>
+<td>Contract-generated API docs and consistent errors.</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>OWASP ASVS 5.0 Level 1 subset, selected Level 2 controls</td>
+<td>Requirement IDs mapped to tests; no claim of certification.</td>
+</tr>
+<tr>
+<td>AI risk</td>
+<td>NIST AI RMF 1.0 + NIST AI 600-1 GenAI Profile</td>
+<td>Govern/map/measure/manage register for hallucination, privacy, injection, and over-reliance.</td>
+</tr>
+<tr>
+<td>AI application risk</td>
+<td>OWASP Top 10 for LLM Applications</td>
+<td>Injection, sensitive disclosure, excessive agency, over-reliance, and unbounded consumption tests.</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>OpenTelemetry</td>
+<td>Vendor-neutral traces, metrics, logs, correlation IDs.</td>
+</tr>
+<tr>
+<td>Accessibility</td>
+<td>WCAG 2.2 AA target</td>
+<td>Keyboard, focus, labels, contrast, errors, non-color states.</td>
+</tr>
+<tr>
+<td>Supply chain</td>
+<td>SLSA principles + SPDX/CycloneDX SBOM</td>
+<td>Pinned CI, build provenance where available, dependency and license manifest.</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>Data minimization, least privilege, retention/deletion</td>
+<td>Synthetic demo data; tenant/role rules; retention job and deletion procedure.</td>
+</tr>
+</tbody>
+</table>
+<p>Primary references:</p>
+<ul>
+<li><a href="https://owasp.org/www-project-application-security-verification-standard/">OWASP ASVS 5.0</a></li>
+<li><a href="https://www.nist.gov/itl/ai-risk-management-framework">NIST AI Risk Management Framework</a></li>
+<li><a href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf">NIST Generative AI Profile</a></li>
+<li><a href="https://opentelemetry.io/docs/">OpenTelemetry documentation</a></li>
+<li><a href="https://www.w3.org/TR/WCAG22/">WCAG 2.2 Recommendation</a></li>
+<li><a href="https://spec.openapis.org/oas/latest.html">OpenAPI Specification</a></li>
+<li><a href="https://www.rfc-editor.org/rfc/rfc9457">RFC 9457</a></li>
+<li><a href="https://slsa.dev/spec/">SLSA specification</a></li>
+</ul>
+<hr />
+<h2 id="6-c4-architecture-views">6. C4 architecture views<a class="headerlink" href="#6-c4-architecture-views" title="Permanent link">&para;</a></h2>
+<h3 id="level-1-system-context">Level 1 — system context<a class="headerlink" href="#level-1-system-context" title="Permanent link">&para;</a></h3>
+<div class="mermaid">flowchart LR
+    Employee["Employee\nsubmits reimbursement"]
+    Reviewer["Finance reviewer\nmakes final decision"]
+    Admin["Policy admin\npublishes policy"]
+    Auditor["Auditor\nreads evidence"]
+    CS["ClearSpend"]
+    AI["Managed or local AI provider"]
+    IDP["Identity provider"]
+    Store["Private object storage"]
+
+    Employee --> CS
+    Reviewer --> CS
+    Admin --> CS
+    Auditor --> CS
+    CS --> AI
+    CS --> IDP
+    CS --> Store
+</div>
+<p>Trust boundary: only ClearSpend can change domain state. The AI provider returns untrusted candidate data. Identity claims are verified and mapped to an organization membership before authorization.</p>
+<h3 id="level-2-containers">Level 2 — containers<a class="headerlink" href="#level-2-containers" title="Permanent link">&para;</a></h3>
+<div class="mermaid">flowchart TB
+    Browser["Browser"]
+    Web["Frontend container\nNext.js + React on Node.js"]
+    API["API container\nFastAPI + Python domain modules"]
+    Worker["Worker container\nProcrastinate + LangGraph"]
+    DB[("PostgreSQL\ndomain state + Procrastinate jobs + audit")]
+    Files[("Private S3-compatible receipts")]
+    Model["AI adapter endpoint"]
+    Telemetry["OpenTelemetry backend"]
+
+    Browser -->|HTTPS| Web
+    Web -->|same-origin /api/v1| API
+    API -->|SQLAlchemy transactions| DB
+    API -->|signed upload/read| Files
+    API -->|defer assessment| DB
+    Worker -->|Procrastinate lease/read/write| DB
+    Worker -->|read receipt| Files
+    Worker -->|execute bounded graph| Graph["LangGraph StateGraph"]
+    Graph -->|structured request; no tools| Model
+    Web --> Telemetry
+    API --> Telemetry
+    Worker --> Telemetry
+</div>
+<p>Deploy the FastAPI API and Procrastinate worker from the exact same Python image digest with different commands. Deploy the Next.js frontend from its own pinned image digest. This prevents API/worker code drift while respecting the separate frontend runtime.</p>
+<h3 id="level-3-assessment-components">Level 3 — assessment components<a class="headerlink" href="#level-3-assessment-components" title="Permanent link">&para;</a></h3>
+<div class="mermaid">flowchart LR
+    Job["Procrastinate assessment job"] --> Orch["LangGraph Assessment StateGraph"]
+    Orch --> Loader["Tenant-scoped claim/policy loader"]
+    Orch --> Rules["Python ExpenseRuleEvaluator"]
+    Orch --> Retrieve["PolicySectionRetriever"]
+    Orch --> Provider["AIProvider adapter"]
+    Provider --> Contract["Schema + citation validator"]
+    Rules --> Aggregate["RecommendationAggregator"]
+    Contract --> Aggregate
+    Aggregate --> Persist["Atomic assessment + audit writer"]
+    Persist --> Metrics["Telemetry emitter"]
+</div>
+<h3 id="deployment-view">Deployment view<a class="headerlink" href="#deployment-view" title="Permanent link">&para;</a></h3>
+<div class="mermaid">flowchart LR
+    Git["GitHub protected main"] --> CI["Blocking GitHub Actions"]
+    CI --> WebImage["Pinned Next.js image digest"]
+    CI --> PyImage["Pinned Python image digest"]
+    WebImage --> Web["Render frontend service"]
+    PyImage --> API["Render FastAPI service"]
+    PyImage --> Worker["Render Procrastinate worker"]
+    Web --> API
+    API --> PG["Managed PostgreSQL"]
+    Worker --> PG
+    API --> Obj["Private object storage"]
+    Worker --> Obj
+    Worker --> OAI["OpenAI Responses API"]
+    Web --> OTel["OTel / Grafana Cloud"]
+    API --> OTel
+    Worker --> OTel
+</div>
+<p>No Kubernetes, Redis, or Kafka is required. One frontend instance, one FastAPI instance, one Procrastinate worker, and one PostgreSQL database are sufficient for the evaluated product.</p>
+<hr />
+<h2 id="7-monorepo-and-backend-modular-monolith-structure">7. Monorepo and backend modular-monolith structure<a class="headerlink" href="#7-monorepo-and-backend-modular-monolith-structure" title="Permanent link">&para;</a></h2>
+<pre><code class="language-text">apps/
+  web/                           # Next.js frontend; Node.js runtime
+    app/                         # pages, layouts, frontend-only route handlers
+    components/
+    lib/api/                     # generated FastAPI/OpenAPI client
+    tests/
+services/
+  backend/                       # one Python backend codebase
+    app/
+      api/                       # FastAPI routers and dependencies
+      identity/
+      policies/
+        rules/                   # typed deterministic expense checks
+      expenses/
+      assessments/
+        graph/                   # LangGraph state, nodes, edges, routing
+        providers/               # fake, OpenAI, OpenAI-compatible adapters
+      approvals/
+      audit/
+      analytics/
+      platform/
+        db/                      # SQLAlchemy models/repositories
+        jobs/                    # Procrastinate app, tasks, recovery
+        storage/
+        telemetry/
+        config/
+    alembic/                     # database migrations
+    tests/
+      unit/
+      property/
+      integration/
+      contract/
+contracts/
+  openapi.json
+  generated-typescript-client/
+evals/
+  manifest.yaml
+  policies/
+  cases/
+  labels/
+infrastructure/
+docs/
+</code></pre>
+<h3 id="dependency-rules">Dependency rules<a class="headerlink" href="#dependency-rules" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Python domain modules import no FastAPI, SQLAlchemy, LangGraph, model SDK, or telemetry implementation.</li>
+<li>FastAPI routers validate HTTP concerns and call application services; they contain no business rules.</li>
+<li>SQLAlchemy repositories, Procrastinate tasks, LangGraph nodes, storage, and model providers implement narrow ports.</li>
+<li>Next.js contains presentation and client concerns only. It never connects directly to PostgreSQL, object storage, Procrastinate, or the AI provider.</li>
+<li>FastAPI-generated OpenAPI is the contract source; CI regenerates the TypeScript client and fails on uncommitted drift.</li>
+<li>cross-module changes occur through explicit application services or events, not direct table access.</li>
+<li>only the audit writer creates audit rows.</li>
+<li>only the approval service changes final decision state.</li>
+<li>only the policy publisher creates published versions.</li>
+</ul>
+<p>Enforce frontend boundaries with ESLint and backend boundaries with Ruff/import-linter plus architecture tests.</p>
+<hr />
+<h2 id="8-domain-model-and-invariants">8. Domain model and invariants<a class="headerlink" href="#8-domain-model-and-invariants" title="Permanent link">&para;</a></h2>
+<h3 id="main-aggregates">Main aggregates<a class="headerlink" href="#main-aggregates" title="Permanent link">&para;</a></h3>
+<h4 id="policyversion">PolicyVersion<a class="headerlink" href="#policyversion" title="Permanent link">&para;</a></h4>
+<ul>
+<li>A draft is editable.</li>
+<li>Publication validates every typed rule, creates a content hash, and makes the version immutable.</li>
+<li>Exactly one published version is active per organization at a time.</li>
+<li>Claims retain the policy version captured at submission.</li>
+<li>A new publication never rewrites a historical assessment.</li>
+</ul>
+<h4 id="expenseclaim">ExpenseClaim<a class="headerlink" href="#expenseclaim" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Amount uses ISO currency and integer minor units.</li>
+<li>Submitter and organization are server-derived.</li>
+<li>A submitted claim has a policy version.</li>
+<li>A final claim is not silently reopened or overwritten.</li>
+<li>Receipt object keys are opaque and private.</li>
+</ul>
+<h4 id="assessmentattempt">AssessmentAttempt<a class="headerlink" href="#assessmentattempt" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Attempts are append-only.</li>
+<li>The record separates deterministic checks, provider contribution, aggregate recommendation, and technical status.</li>
+<li>Provider text is untrusted until schema and citation validation pass.</li>
+<li>A failed attempt can never create <code>APPROVE_RECOMMENDED</code>.</li>
+</ul>
+<h4 id="approvaldecision">ApprovalDecision<a class="headerlink" href="#approvaldecision" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Only Reviewer/Admin can decide.</li>
+<li>A decision stores the recommendation observed at decision time.</li>
+<li>Override requires non-empty reason.</li>
+<li>Idempotency key is unique within organization and endpoint.</li>
+<li>Decision, state change, audit event, and outbox entry commit atomically.</li>
+</ul>
+<h4 id="auditevent">AuditEvent<a class="headerlink" href="#auditevent" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Append-only from application roles.</li>
+<li>Canonical JSON avoids nondeterministic key ordering.</li>
+<li>Event contains actor, request/correlation ID, entity, action, reason category, provenance, prior hash, and event hash.</li>
+<li>Private receipt/purpose content is referenced by ID/hash, not copied into audit metadata.</li>
+</ul>
+<h3 id="state-machine">State machine<a class="headerlink" href="#state-machine" title="Permanent link">&para;</a></h3>
+<div class="mermaid">stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> SUBMITTED: submit
+    SUBMITTED --> ASSESSING: job leased
+    ASSESSING --> AWAITING_REVIEW: assessment or safe fallback
+    AWAITING_REVIEW --> INFORMATION_REQUESTED: reviewer asks
+    INFORMATION_REQUESTED --> SUBMITTED: employee resubmits
+    AWAITING_REVIEW --> APPROVED: human approves
+    AWAITING_REVIEW --> REJECTED: human rejects
+    APPROVED --> [*]
+    REJECTED --> [*]
+</div>
+<p>Enforce the transition matrix in domain code and with database constraints/optimistic row versioning. UI state is never the authority.</p>
+<hr />
+<h2 id="9-data-architecture">9. Data architecture<a class="headerlink" href="#9-data-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="core-relational-schema">Core relational schema<a class="headerlink" href="#core-relational-schema" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key columns and constraints</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>organizations</code></td>
+<td><code>id</code>, <code>slug</code>, <code>name</code>, timestamps; unique slug.</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td><code>id</code>, normalized identity fields; no domain role globally.</td>
+</tr>
+<tr>
+<td><code>memberships</code></td>
+<td><code>organization_id</code>, <code>user_id</code>, role enum; unique pair.</td>
+</tr>
+<tr>
+<td><code>policy_versions</code></td>
+<td>org, integer version, status, content hash, publisher, time; unique org/version.</td>
+</tr>
+<tr>
+<td><code>policy_sections</code></td>
+<td>policy version, stable key, title, source text, sequence; unique version/key.</td>
+</tr>
+<tr>
+<td><code>policy_rules</code></td>
+<td>section, type enum, typed JSON params, priority; schema validated before insert/publication.</td>
+</tr>
+<tr>
+<td><code>expenses</code></td>
+<td>org, submitter, policy version, merchant, amount minor, currency, incurred date, category, purpose, state, row version.</td>
+</tr>
+<tr>
+<td><code>receipts</code></td>
+<td>org, expense, object key, MIME, size, SHA-256, extraction status; unique org/hash if exact duplicates are flagged.</td>
+</tr>
+<tr>
+<td><code>assessment_attempts</code></td>
+<td>org, expense, attempt number, technical status, recommendation, engine/prompt/model/provider versions, usage/latency.</td>
+</tr>
+<tr>
+<td><code>assessment_checks</code></td>
+<td>attempt, stable check key, source, status, reason code, bounded explanation.</td>
+</tr>
+<tr>
+<td><code>assessment_citations</code></td>
+<td>check, policy section FK, optional offsets/source hash.</td>
+</tr>
+<tr>
+<td><code>approval_decisions</code></td>
+<td>org, expense, actor, action, reason, observed recommendation, idempotency key.</td>
+</tr>
+<tr>
+<td><code>audit_events</code></td>
+<td>org sequence, entity/action/actor, bounded metadata, correlation ID, prior hash, event hash, occurred time.</td>
+</tr>
+<tr>
+<td><code>jobs</code></td>
+<td>queue name, payload reference, state, attempts, lease, next run, error code.</td>
+</tr>
+<tr>
+<td><code>outbox_events</code></td>
+<td>aggregate, type, payload, created/published time; written with domain transaction.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="required-database-controls">Required database controls<a class="headerlink" href="#required-database-controls" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Foreign keys for every relationship.</li>
+<li>Check constraints for positive amount, supported ISO currency, and known enum values.</li>
+<li>Unique <code>(organization_id, version)</code> and idempotency keys.</li>
+<li>Index pending job state/time, review queue state/time, org/entity audit lookup, and policy-section search.</li>
+<li>No cascading delete from policy/assessment/audit history.</li>
+<li>Use <code>SELECT ... FOR UPDATE</code> or optimistic version checks for final decision concurrency.</li>
+<li>Migrations are forward-only for the release; destructive changes require expand/migrate/contract.</li>
+<li>Daily managed backups where available; document a restore test rather than claiming recovery without one.</li>
+</ul>
+<h3 id="tenant-isolation">Tenant isolation<a class="headerlink" href="#tenant-isolation" title="Permanent link">&para;</a></h3>
+<ol>
+<li><code>Principal</code> is constructed from a verified session.</li>
+<li>Organization membership is loaded server-side.</li>
+<li>Repository methods require a <code>TenantContext</code> rather than accepting a naked organization ID.</li>
+<li>Queries include organization scope even when looking up globally unique IDs.</li>
+<li>PostgreSQL Row-Level Security is optional defense in depth after application scoping works; do not rush an untested RLS design before release.</li>
+<li>Integration tests create two organizations and attempt horizontal/vertical privilege escalation.</li>
+</ol>
+<h3 id="retention-and-deletion">Retention and deletion<a class="headerlink" href="#retention-and-deletion" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Demo environment: synthetic data may be reset during seed/redeploy.</li>
+<li>Research data: stored separately from product data and anonymized.</li>
+<li>Product pilot proposal: configurable receipt retention, default 90 days for pilot, while audit metadata retains non-sensitive hashes/IDs.</li>
+<li>Organization deletion uses a documented, authorized asynchronous workflow with status and completion evidence.</li>
+<li>Audit evidence must not retain raw sensitive content unnecessarily.</li>
+</ul>
+<hr />
+<h2 id="10-critical-runtime-workflows">10. Critical runtime workflows<a class="headerlink" href="#10-critical-runtime-workflows" title="Permanent link">&para;</a></h2>
+<h3 id="claim-submission-transaction">Claim submission transaction<a class="headerlink" href="#claim-submission-transaction" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Authenticate and resolve tenant membership.</li>
+<li>Validate body with Pydantic and reject unknown fields.</li>
+<li>Validate receipt upload token/metadata.</li>
+<li>Read active published policy version.</li>
+<li>In one SQLAlchemy database transaction create expense, attach receipt metadata, append <code>expense.submitted</code>, and create an assessment-outbox row.</li>
+<li>Return <code>202 Accepted</code>, claim ID, state, and correlation ID.</li>
+<li>Retried client request with same idempotency key returns the original result.</li>
+<li>The outbox dispatcher defers a Procrastinate job after commit; a reconciliation task repairs submitted claims that have neither an active job nor a completed assessment.</li>
+</ol>
+<h3 id="assessment-worker">Assessment worker<a class="headerlink" href="#assessment-worker" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Procrastinate leases the job from PostgreSQL using the <code>assessments</code> queue.</li>
+<li>Load claim and captured policy version through tenant-scoped repositories.</li>
+<li>Invoke the bounded LangGraph <code>StateGraph</code> with expense ID, revision, assessment engine version, and correlation ID.</li>
+<li>Run deterministic checks in typed Python nodes.</li>
+<li>If a clear deterministic prohibition exists, AI explanation is optional; never let AI reverse it.</li>
+<li>Retrieve only candidate policy sections using full-text search and explicit rule links.</li>
+<li>Construct minimized provider input and hash it.</li>
+<li>Call AI adapter with deadline, no tools, Structured Outputs, and response storage disabled where supported.</li>
+<li>Validate schema, enums, lengths, and cited section allowlist.</li>
+<li>Aggregate in deterministic application code.</li>
+<li>Atomically append assessment/checks/citations, audit event, metrics outbox, and task outcome.</li>
+<li>Procrastinate retries only classified transient infrastructure/provider failures. Business ambiguity returns a successful <code>NEEDS_REVIEW</code> result rather than retrying.</li>
+<li>After the maximum retry attempt, persist a safe fallback and emit a dead/stalled-job alert. A periodic heartbeat-based recovery task retries workers terminated without graceful shutdown.</li>
+</ol>
+<h3 id="human-decision-transaction">Human decision transaction<a class="headerlink" href="#human-decision-transaction" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Authenticate Reviewer/Admin in the expense organization.</li>
+<li>Validate action, reason, expected row version, and idempotency key.</li>
+<li>Lock/check expense is <code>AWAITING_REVIEW</code>.</li>
+<li>Require a reason for override or rejection.</li>
+<li>Insert decision; update expense state; append audit/outbox in one transaction.</li>
+<li>Return the committed decision. Duplicate idempotency returns the same representation.</li>
+</ol>
+<h3 id="request-information-loop">Request-information loop<a class="headerlink" href="#request-information-loop" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Reviewer names structured missing fields plus a bounded message.</li>
+<li>Employee may edit only allowed submission fields.</li>
+<li>Resubmission creates a new claim revision and assessment attempt; old evidence remains visible.</li>
+<li>Recommendation history is append-only.</li>
+</ul>
+<hr />
+<h2 id="11-deterministic-expense-rule-evaluator">11. Deterministic expense-rule evaluator<a class="headerlink" href="#11-deterministic-expense-rule-evaluator" title="Permanent link">&para;</a></h2>
+<p>The selected implementation is a custom typed Python module, not Open Policy Agent. It produces objective <code>PASS</code>, <code>FAIL</code>, or <code>UNKNOWN</code> checks with evidence and policy-section citations. It never changes workflow state and never makes the final reimbursement decision.</p>
+<h3 id="initial-rule-types">Initial rule types<a class="headerlink" href="#initial-rule-types" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Input</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>receipt_required</code></td>
+<td>amount, receipt status, threshold</td>
+<td>pass/fail/unknown + citation</td>
+</tr>
+<tr>
+<td><code>amount_limit</code></td>
+<td>category, amount, employee attributes</td>
+<td>pass/fail/unknown + citation</td>
+</tr>
+<tr>
+<td><code>prohibited_category</code></td>
+<td>normalized category/items</td>
+<td>pass/fail/unknown + citation</td>
+</tr>
+<tr>
+<td><code>business_purpose_required</code></td>
+<td>category and text presence</td>
+<td>pass/fail; semantic sufficiency remains AI-assisted</td>
+</tr>
+<tr>
+<td><code>submission_window</code></td>
+<td>incurred/submitted date and days</td>
+<td>pass/fail</td>
+</tr>
+<tr>
+<td><code>approver_threshold</code></td>
+<td>amount and org routing table</td>
+<td>approver role/user reference</td>
+</tr>
+<tr>
+<td><code>exact_duplicate</code></td>
+<td>receipt hash + merchant/date/amount</td>
+<td>pass/fail/unknown</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rule-contract">Rule contract<a class="headerlink" href="#rule-contract" title="Permanent link">&para;</a></h3>
+<pre><code class="language-python">class CheckStatus(StrEnum):
+    PASS = &quot;PASS&quot;
+    FAIL = &quot;FAIL&quot;
+    UNKNOWN = &quot;UNKNOWN&quot;
+
+class PolicyCheck(BaseModel):
+    model_config = ConfigDict(extra=&quot;forbid&quot;, frozen=True)
+    check_key: str
+    source: Literal[&quot;DETERMINISTIC&quot;, &quot;AI&quot;]
+    status: CheckStatus
+    reason_code: str
+    policy_section_ids: list[str]
+    evidence_refs: list[str]
+</code></pre>
+<p>The implementation uses Python <code>Enum</code>, Pydantic models, <code>Decimal</code>/integer minor units, and a registry mapping a closed rule type to a tested evaluator. It must never execute policy-provided Python, use <code>eval</code>, or accept model-generated executable rules.</p>
+<p>OPA/Rego is explicitly deferred. Reconsider it only if multiple independently deployed services/languages require centralized policy distribution, the rule catalog becomes substantially larger, and the team can operate/version/test Rego bundles. OPA would not replace semantic receipt or natural-language policy interpretation.</p>
+<p>Rules return evidence, not final workflow state. The aggregator owns recommendation logic. Rule parameters are validated at policy publication, not discovered during expense review.</p>
+<h3 id="aggregation-precedence">Aggregation precedence<a class="headerlink" href="#aggregation-precedence" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Technical failure, invalid citation, or required evidence missing → <code>NEEDS_REVIEW</code>.</li>
+<li>Clear deterministic prohibition → <code>REJECT_RECOMMENDED</code>.</li>
+<li>Any unknown/conflicting material check → <code>NEEDS_REVIEW</code>.</li>
+<li>All applicable required checks pass → <code>APPROVE_RECOMMENDED</code>.</li>
+<li>Default → <code>NEEDS_REVIEW</code>.</li>
+</ol>
+<p>Test all precedence pairs so a later AI pass cannot overwrite an earlier deterministic failure.</p>
+<h3 id="exact-procrastinate-worker-design">Exact Procrastinate worker design<a class="headerlink" href="#exact-procrastinate-worker-design" title="Permanent link">&para;</a></h3>
+<p>Procrastinate is the selected background-task system. It uses the existing PostgreSQL service for task definitions, locks, scheduling, retries, and worker coordination, so ClearSpend does not add Redis, RabbitMQ, or Kafka.</p>
+<pre><code class="language-text">FastAPI transaction
+  ├── expense / policy_version reference
+  ├── audit_event
+  └── assessment_outbox
+            ↓
+outbox dispatcher
+            ↓
+Procrastinate queue: assessments
+            ↓
+Python worker process
+            ↓
+LangGraph assessment StateGraph
+</code></pre>
+<p>Initial configuration:</p>
+<ul>
+<li>asynchronous <code>PsycopgConnector</code>;</li>
+<li>separate <code>procrastinate worker</code> process from the same backend image as FastAPI;</li>
+<li>queue <code>assessments</code>;</li>
+<li>initial concurrency <code>4</code>, measured rather than assumed as a production optimum;</li>
+<li>maximum <code>3</code> attempts with exponential backoff for retryable failures;</li>
+<li>task lock and queueing lock <code>expense:{expense_id}:revision:{revision}</code>;</li>
+<li>payload contains identifiers/version/correlation ID only, never receipt bytes or full policy text;</li>
+<li>uniqueness constraint <code>(expense_id, revision, assessment_engine_version)</code> makes processing idempotent;</li>
+<li>graceful shutdown plus periodic stalled-worker recovery based on Procrastinate heartbeats.</li>
+</ul>
+<p>Procrastinate answers <strong>when and where</strong> the background job runs. LangGraph answers <strong>which assessment step runs next</strong>. PostgreSQL domain tables remain the business system of record; neither the task row nor LangGraph checkpoint is the authoritative approval/audit record.</p>
+<hr />
+<h2 id="12-ai-subsystem">12. AI subsystem<a class="headerlink" href="#12-ai-subsystem" title="Permanent link">&para;</a></h2>
+<h3 id="initial-managed-path">Initial managed path<a class="headerlink" href="#initial-managed-path" title="Permanent link">&para;</a></h3>
+<p>Use OpenAI Responses API with <code>gpt-5.6-terra</code> as an initial benchmark candidate because current official model guidance positions it as the balance of intelligence and cost, and current models support image input and Structured Outputs. Model selection remains conditional on ClearSpend’s own evaluation. Use <code>gpt-5.6-luna</code> as the measured cost/latency challenger.</p>
+<p>Required request properties:</p>
+<ul>
+<li><code>store: false</code>;</li>
+<li>no tools and no web/file search;</li>
+<li>low reasoning initially, benchmarked against alternatives;</li>
+<li>strict JSON Schema Structured Outputs;</li>
+<li>stable prompt prefix and explicit <code>prompt_version</code>;</li>
+<li>bounded image size/detail and selected policy sections only;</li>
+<li>application-side deadline and abort;</li>
+<li>usage, latency, request/provider ID, and model ID recorded;</li>
+<li>no raw prompt/receipt text in ordinary logs.</li>
+</ul>
+<p>Official OpenAI references:</p>
+<ul>
+<li><a href="https://developers.openai.com/api/docs/models/gpt">Current model selection guidance</a></li>
+<li><a href="https://developers.openai.com/api/reference/cli/resources/responses/methods/create">Responses API create method</a></li>
+<li><a href="https://developers.openai.com/api/reference/cli/resources/beta/subresources/responses">Structured Outputs behavior</a></li>
+<li><a href="https://developers.openai.com/api/docs/models/gpt-oss-20b">Open-weight <code>gpt-oss-20b</code></a></li>
+</ul>
+<h3 id="provider-independent-port">Provider-independent port<a class="headerlink" href="#provider-independent-port" title="Permanent link">&para;</a></h3>
+<pre><code class="language-python">class AIProvider(Protocol):
+    async def assess(
+        self,
+        input: AssessmentAIInput,
+        *,
+        timeout_seconds: float,
+    ) -&gt; AIProviderResult: ...
+
+class AIProviderResult(BaseModel):
+    model_config = ConfigDict(extra=&quot;forbid&quot;)
+    kind: Literal[
+        &quot;success&quot;, &quot;timeout&quot;, &quot;rate_limited&quot;,
+        &quot;invalid_output&quot;, &quot;provider_error&quot;
+    ]
+    value: CandidateAssessment | None = None
+    retryable: bool = False
+    error_code: str | None = None
+    provenance: ProviderProvenance
+</code></pre>
+<p>Implementations:</p>
+<ul>
+<li><code>FakeAIProvider</code>: deterministic fixtures for offline demo/tests.</li>
+<li><code>OpenAIProvider</code>: managed primary candidate.</li>
+<li><code>OpenAICompatibleProvider</code>: later/local vLLM path.</li>
+</ul>
+<h3 id="exact-langgraph-workflow">Exact LangGraph workflow<a class="headerlink" href="#exact-langgraph-workflow" title="Permanent link">&para;</a></h3>
+<p>Use one typed <code>StateGraph</code>, not multiple autonomous agents. The graph runs inside one Procrastinate assessment task:</p>
+<div class="mermaid">flowchart TD
+    Start([START]) --> Load[load_context]
+    Load --> Validate[validate_submission]
+    Validate --> Rules[run_deterministic_rules]
+    Rules --> Route{semantic judgment needed?}
+    Route -->|no| Aggregate[aggregate_recommendation]
+    Route -->|yes| Extract[extract_receipt]
+    Extract --> Retrieve[retrieve_policy_sections]
+    Retrieve --> Assess[semantic_policy_assessment]
+    Assess --> Contract[validate_ai_contract]
+    Contract -->|valid| Aggregate
+    Contract -->|invalid| Fallback[needs_review_fallback]
+    Assess -->|timeout/error| Fallback
+    Validate -->|missing required evidence| Fallback
+    Aggregate --> Persist[persist_assessment_and_audit]
+    Fallback --> Persist
+    Persist --> End([END])
+</div>
+<p>Graph state contains identifiers, normalized evidence, rule results, retrieved section IDs, provider attempt/provenance, validation errors, and candidate recommendation. It contains no credentials and does not become the audit source of truth.</p>
+<p>Human approval is intentionally outside LangGraph. The graph ends at <code>AWAITING_REVIEW</code>; FastAPI later authorizes and records the reviewer’s final action in a separate database transaction. Add LangGraph checkpoint persistence only if a measured need to resume long-running graph execution appears; Procrastinate plus authoritative PostgreSQL domain state is sufficient for the MVP.</p>
+<h3 id="open-source-ai-path">Open-source AI path<a class="headerlink" href="#open-source-ai-path" title="Permanent link">&para;</a></h3>
+<p>Use vLLM’s OpenAI-compatible server with <code>gpt-oss-20b</code> for text-only assessment. It supports structured-output serving, and the model is Apache-2.0 licensed. Because <code>gpt-oss-20b</code> is text-only, pair it with PaddleOCR or manual verified receipt fields. Treat local inference hardware, latency, memory, and electricity as costs—not “free AI.”</p>
+<p>Do not switch to the local path before the deadline unless hardware is already available and the golden suite passes. The adapter and fake mode are sufficient to prove portability.</p>
+<h3 id="prompt-injection-controls">Prompt-injection controls<a class="headerlink" href="#prompt-injection-controls" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Treat receipt OCR, memo, merchant, and policy text as untrusted quoted data.</li>
+<li>Developer instruction states that embedded instructions must not be followed.</li>
+<li>Provide no tools or side effects.</li>
+<li>Allow only retrieved section IDs in citations.</li>
+<li>Reject extra properties and unsupported enums.</li>
+<li>Bound every string/array length.</li>
+<li>Run an injection suite containing direct, indirect, Unicode, hidden-text, and fake-policy-ID cases.</li>
+<li>Do not expose chain-of-thought; store concise rationale fields required for user explanation.</li>
+</ul>
+<h3 id="ai-response-validation">AI response validation<a class="headerlink" href="#ai-response-validation" title="Permanent link">&para;</a></h3>
+<p>Validate in this order:</p>
+<ol>
+<li>provider completed before deadline;</li>
+<li>JSON matches exact schema;</li>
+<li>known schema/prompt version;</li>
+<li>allowed enum values;</li>
+<li>bounded field lengths/counts;</li>
+<li>citation IDs are a subset of supplied sections;</li>
+<li>each material check has evidence/citation or becomes unknown;</li>
+<li>no contradiction with deterministic results;</li>
+<li>aggregator recomputes final recommendation.</li>
+</ol>
+<p>The model never returns the authoritative final recommendation field used by the workflow. It returns contributions/checks; application code aggregates them.</p>
+<hr />
+<h2 id="13-api-architecture">13. API architecture<a class="headerlink" href="#13-api-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="conventions">Conventions<a class="headerlink" href="#conventions" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Versioned <code>/api/v1</code> routes.</li>
+<li>JSON bodies with strict Pydantic validation; FastAPI generates OpenAPI 3.1 and the frontend client/types are generated from that contract.</li>
+<li>RFC 9457 <code>application/problem+json</code> errors.</li>
+<li>UUIDv7/ULID identifiers; no sequential tenant IDs in URLs.</li>
+<li>UTC timestamps in ISO 8601; user display uses configured timezone.</li>
+<li>Integer minor-unit money plus ISO 4217 code.</li>
+<li><code>Idempotency-Key</code> required on submission and decision mutations.</li>
+<li><code>X-Correlation-ID</code> accepted if valid or generated server-side.</li>
+<li>Cursor pagination for lists.</li>
+<li>Optimistic concurrency through <code>If-Match</code>/row version on decisions.</li>
+</ul>
+<h3 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Role</th>
+<th>Success</th>
+<th>Important failures</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/policies/drafts</code></td>
+<td>Admin</td>
+<td>201</td>
+<td>400, 401, 403, 409</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/policies/{id}/publish</code></td>
+<td>Admin</td>
+<td>201 version</td>
+<td>409 invalid/current race, 422 rule validation</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/policies/{id}</code></td>
+<td>scoped</td>
+<td>200</td>
+<td>403/404 indistinguishable across tenant boundary</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/expenses</code></td>
+<td>Employee/Admin</td>
+<td>202</td>
+<td>409 idempotency mismatch, 422 validation</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/expenses</code></td>
+<td>scoped</td>
+<td>200</td>
+<td>400 cursor, 403</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/expenses/{id}</code></td>
+<td>scoped</td>
+<td>200</td>
+<td>404 for absent/not-visible</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/expenses/{id}/decisions</code></td>
+<td>Reviewer/Admin</td>
+<td>201</td>
+<td>409 stale/final/idempotency, 422 reason</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/expenses/{id}/resubmissions</code></td>
+<td>owner</td>
+<td>202</td>
+<td>409 state/version</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/api/v1/audit-events</code></td>
+<td>Admin/Auditor</td>
+<td>200</td>
+<td>403</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><code>/api/v1/audit-exports</code></td>
+<td>Admin/Auditor</td>
+<td>202</td>
+<td>429/403</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/health/live</code></td>
+<td>platform</td>
+<td>200</td>
+<td>no dependency details</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><code>/health/ready</code></td>
+<td>platform</td>
+<td>200/503</td>
+<td>bounded dependency result</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example-problem-response">Example problem response<a class="headerlink" href="#example-problem-response" title="Permanent link">&para;</a></h3>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://clears-spend.example/problems/stale-decision&quot;,
+  &quot;title&quot;: &quot;Expense changed before the decision was recorded&quot;,
+  &quot;status&quot;: 409,
+  &quot;code&quot;: &quot;EXPENSE_VERSION_CONFLICT&quot;,
+  &quot;correlationId&quot;: &quot;01J...&quot;,
+  &quot;detail&quot;: &quot;Refresh the expense and review the latest assessment.&quot;
+}
+</code></pre>
+<p>Do not leak whether a cross-tenant record exists.</p>
+<hr />
+<h2 id="14-security-architecture">14. Security architecture<a class="headerlink" href="#14-security-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="trust-zones">Trust zones<a class="headerlink" href="#trust-zones" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Browser: hostile/untrusted input.</li>
+<li>Web server: authenticated entry, authorization, validation.</li>
+<li>Worker: no public ingress; least-privilege DB/storage/provider credentials.</li>
+<li>PostgreSQL: private network/TLS; separate migration and runtime roles where supported.</li>
+<li>Object storage: private bucket; signed access; no public listing.</li>
+<li>AI provider: external processor receiving minimized content.</li>
+<li>Telemetry: never receives raw receipts, prompts, tokens, or sensitive purpose text.</li>
+</ol>
+<h3 id="rbac-matrix">RBAC matrix<a class="headerlink" href="#rbac-matrix" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th style="text-align: center;">Employee</th>
+<th style="text-align: center;">Reviewer</th>
+<th style="text-align: center;">Admin</th>
+<th style="text-align: center;">Auditor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Submit own claim</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">optional</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td>View own claim</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓ if routed</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓ redacted</td>
+</tr>
+<tr>
+<td>View all org review claims</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓ read-only</td>
+</tr>
+<tr>
+<td>Decide</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td>Publish policy</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td>View audit</td>
+<td style="text-align: center;">own/minimal</td>
+<td style="text-align: center;">relevant</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Export audit</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Manage membership</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mandatory-controls">Mandatory controls<a class="headerlink" href="#mandatory-controls" title="Permanent link">&para;</a></h3>
+<ul>
+<li>HttpOnly, Secure, SameSite session cookies; session rotation.</li>
+<li>CSRF protection for cookie-authenticated mutations.</li>
+<li>Argon2id only if passwords are implemented; prefer external identity/magic links.</li>
+<li>Server-side authorization on every object action.</li>
+<li>Parameterized SQL through ORM; no dynamic raw SQL from input.</li>
+<li>Content Security Policy, HSTS in deployed HTTPS, frame restrictions, MIME sniffing protection.</li>
+<li>Upload signature/type/size verification; random object key; attachment disposition.</li>
+<li>Rate limits by IP and authenticated principal for login, upload, assessment, and export.</li>
+<li>Secrets only in platform secret store; separate environments and least-privilege keys.</li>
+<li>Logs use allowlisted fields; automated redaction tests.</li>
+<li>Database backups encrypted by provider; restore evidence required before claiming recovery.</li>
+</ul>
+<h3 id="security-tests">Security tests<a class="headerlink" href="#security-tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li>horizontal tenant access;</li>
+<li>employee-to-reviewer/admin escalation;</li>
+<li>auditor mutation;</li>
+<li>ID enumeration behavior;</li>
+<li>CSRF rejection;</li>
+<li>stale/forged session;</li>
+<li>mass-assignment/unknown JSON fields;</li>
+<li>SQL/XSS payload rendering;</li>
+<li>malicious filename/MIME/polyglot/oversize upload;</li>
+<li>prompt injection and fake citations;</li>
+<li>secret/log leakage;</li>
+<li>concurrent duplicate decision;</li>
+<li>signed URL expiry and cross-tenant object access.</li>
+</ul>
+<h3 id="compliance-language">Compliance language<a class="headerlink" href="#compliance-language" title="Permanent link">&para;</a></h3>
+<p>Say “designed using selected OWASP ASVS 5.0 controls” and “SOC 2-aligned control intent” only if mapped. Do not say compliant, certified, immutable, fraud-proof, or production-ready without an audit and evidence.</p>
+<hr />
+<h2 id="15-reliability-and-resilience">15. Reliability and resilience<a class="headerlink" href="#15-reliability-and-resilience" title="Permanent link">&para;</a></h2>
+<h3 id="internal-slo-targets-for-the-evaluated-product">Internal SLO targets for the evaluated product<a class="headerlink" href="#internal-slo-targets-for-the-evaluated-product" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>SLI</th>
+<th style="text-align: right;">Target</th>
+<th>Window</th>
+<th>Evidence label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Non-AI API successful availability</td>
+<td style="text-align: right;">99% during demo/test window</td>
+<td>release test</td>
+<td>Measured only after run</td>
+</tr>
+<tr>
+<td>p95 non-AI API latency</td>
+<td style="text-align: right;">&lt;500 ms</td>
+<td>seeded load test</td>
+<td>Measured</td>
+</tr>
+<tr>
+<td>p95 assessment completion</td>
+<td style="text-align: right;">&lt;15 s when provider healthy</td>
+<td>golden live run</td>
+<td>Measured</td>
+</tr>
+<tr>
+<td>Provider-failure safe fallback</td>
+<td style="text-align: right;">100% → Needs review</td>
+<td>fault suite</td>
+<td>Measured</td>
+</tr>
+<tr>
+<td>Completed recommendation citation validity</td>
+<td style="text-align: right;">100%</td>
+<td>all release cases</td>
+<td>Measured</td>
+</tr>
+<tr>
+<td>Final decisions with audit event</td>
+<td style="text-align: right;">100%</td>
+<td>DB invariant audit</td>
+<td>Measured</td>
+</tr>
+<tr>
+<td>Known clear violation false approvals</td>
+<td style="text-align: right;">0</td>
+<td>pinned release suite</td>
+<td>Measured, limited to suite</td>
+</tr>
+</tbody>
+</table>
+<p>Do not advertise these as customer SLA.</p>
+<h3 id="retry-policy">Retry policy<a class="headerlink" href="#retry-policy" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Retry only rate limits, network interruption, and retryable 5xx.</li>
+<li>Do not retry schema-invalid or safety-invalid results automatically beyond one controlled re-attempt with the same pinned contract.</li>
+<li>Exponential backoff with jitter and maximum elapsed time.</li>
+<li>Provider request has an idempotency/client request ID when supported.</li>
+<li>Job attempts are recorded individually.</li>
+<li>After maximum attempts, create <code>NEEDS_REVIEW</code>, complete the workflow safely, and alert.</li>
+</ul>
+<h3 id="timeout-proof">Timeout proof<a class="headerlink" href="#timeout-proof" title="Permanent link">&para;</a></h3>
+<p>The integration test runs a real stub HTTP server that sleeps longer than the application deadline. Assert:</p>
+<ul>
+<li>AbortSignal/cancellation occurs within tolerance.</li>
+<li>Provider connection/request is closed where observable.</li>
+<li>job lease is released or retry scheduled;</li>
+<li>attempt count increments once;</li>
+<li>no approval recommendation is stored;</li>
+<li>final safe result appears after bounded retries;</li>
+<li>elapsed wall time and trace are retained.</li>
+</ul>
+<h3 id="recovery">Recovery<a class="headerlink" href="#recovery" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Migrations run as a release step, not simultaneously from every app instance.</li>
+<li>Before risky migrations, create/verify managed snapshot where supported.</li>
+<li>Use expand/migrate/contract for incompatible schema change.</li>
+<li>Roll back application image to prior digest; never automatically roll back a destructive migration.</li>
+<li>Document queue replay and poison-job quarantine.</li>
+<li>Run at least one backup restore into a non-production database if the platform plan permits.</li>
+</ul>
+<hr />
+<h2 id="16-observability-and-auditability">16. Observability and auditability<a class="headerlink" href="#16-observability-and-auditability" title="Permanent link">&para;</a></h2>
+<h3 id="opentelemetry-spans">OpenTelemetry spans<a class="headerlink" href="#opentelemetry-spans" title="Permanent link">&para;</a></h3>
+<pre><code class="language-text">http.request
+  auth.resolve_principal
+  expense.submit
+    db.transaction
+    audit.append
+    job.enqueue
+
+assessment.run
+  assessment.load
+  rules.evaluate
+  policy.retrieve
+  ai.request
+  ai.validate
+  recommendation.aggregate
+  assessment.persist
+</code></pre>
+<p>Span attributes are IDs/enums only: organization surrogate, expense ID, attempt, rule count, outcome, model ID, prompt version, HTTP status, retryability. Never attach raw policy, purpose, receipt, prompt, or model response.</p>
+<h3 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Dimensions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>http.server.duration</code></td>
+<td>histogram</td>
+<td>route template, method, status</td>
+</tr>
+<tr>
+<td><code>assessment.duration</code></td>
+<td>histogram</td>
+<td>provider, model, outcome</td>
+</tr>
+<tr>
+<td><code>assessment.attempts</code></td>
+<td>counter</td>
+<td>provider, result kind</td>
+</tr>
+<tr>
+<td><code>assessment.queue.age</code></td>
+<td>gauge</td>
+<td>queue</td>
+</tr>
+<tr>
+<td><code>recommendation.total</code></td>
+<td>counter</td>
+<td>recommendation, engine version</td>
+</tr>
+<tr>
+<td><code>decision.total</code></td>
+<td>counter</td>
+<td>action, overridden yes/no</td>
+</tr>
+<tr>
+<td><code>citation.validation_failures</code></td>
+<td>counter</td>
+<td>reason code</td>
+</tr>
+<tr>
+<td><code>provider.tokens</code></td>
+<td>counter</td>
+<td>provider, model, direction</td>
+</tr>
+<tr>
+<td><code>provider.cost_usd</code></td>
+<td>counter/derived ledger</td>
+<td>provider, model, evidence label</td>
+</tr>
+<tr>
+<td><code>information_requests</code></td>
+<td>counter</td>
+<td>missing-field reason</td>
+</tr>
+</tbody>
+</table>
+<p>Keep cardinality bounded; never use user/expense IDs as metric labels.</p>
+<h3 id="alerts-for-the-demopilot">Alerts for the demo/pilot<a class="headerlink" href="#alerts-for-the-demopilot" title="Permanent link">&para;</a></h3>
+<ul>
+<li>any false-approval release test → block, not alert;</li>
+<li>any citation-validation failure in deployed demo → immediate engineer notification;</li>
+<li>provider error rate &gt;20% over 10 minutes → warning and show degraded mode;</li>
+<li>oldest assessment job &gt;2 minutes → warning;</li>
+<li>any dead job → immediate notification;</li>
+<li>readiness failing for 2 consecutive checks → platform alert;</li>
+<li>audit-chain verifier failure → immediate notification and export suspension.</li>
+</ul>
+<p>Every alert needs owner, response action, and closure test in <code>docs/runbooks/</code>.</p>
+<h3 id="product-analytics-privacy">Product analytics privacy<a class="headerlink" href="#product-analytics-privacy" title="Permanent link">&para;</a></h3>
+<p>Generate product events from committed domain events. Use synthetic organization identifiers in demonstration screenshots. Interview observations remain outside production telemetry unless participants explicitly consent.</p>
+<hr />
+<h2 id="17-test-and-ai-evaluation-architecture">17. Test and AI-evaluation architecture<a class="headerlink" href="#17-test-and-ai-evaluation-architecture" title="Permanent link">&para;</a></h2>
+<h3 id="test-layers">Test layers<a class="headerlink" href="#test-layers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Tool</th>
+<th>Purpose</th>
+<th style="text-align: center;">Blocking</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Static</td>
+<td>Pyright/mypy + Ruff for backend; TypeScript + ESLint for frontend</td>
+<td>Types, unsafe imports, boundaries, obvious defects.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Unit</td>
+<td>Pytest; Vitest only for frontend logic</td>
+<td>domain values, rules, aggregation, graph routing, state, hashing.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Property</td>
+<td>Hypothesis</td>
+<td>monetary boundaries, idempotency, rule precedence, state sequences.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>Pytest + Testcontainers/Postgres</td>
+<td>SQLAlchemy transactions, Procrastinate locks/retries, tenant queries, real timeout.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Contract</td>
+<td>HTTPX/respx or real stub server + Pydantic/JSON Schema</td>
+<td>provider success/error/timeout/malformed variants and OpenAPI client drift.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>E2E</td>
+<td>Playwright</td>
+<td>real browser roles and golden paths.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Accessibility</td>
+<td>axe-core + manual keyboard pass</td>
+<td>WCAG 2.2 AA subset.</td>
+<td style="text-align: center;">✓ for critical pages</td>
+</tr>
+<tr>
+<td>Load</td>
+<td>k6</td>
+<td>seeded review/submit API latency and concurrency.</td>
+<td style="text-align: center;">target/record</td>
+</tr>
+<tr>
+<td>AI eval</td>
+<td>custom manifest runner through real orchestrator</td>
+<td>safety class, citations, variance, cost.</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Fault</td>
+<td>Toxiproxy/stub + DB controls</td>
+<td>timeout, reset, slow service, worker death.</td>
+<td style="text-align: center;">✓ for defined faults</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pinned-evaluation-manifest">Pinned evaluation manifest<a class="headerlink" href="#pinned-evaluation-manifest" title="Permanent link">&para;</a></h3>
+<p><code>evals/manifest.yaml</code> is authoritative:</p>
+<pre><code class="language-yaml">suite_version: 1
+required_case_ids:
+  - clear-pass-001
+  - prohibited-alcohol-001
+  - missing-receipt-001
+  - injection-receipt-001
+policy_versions:
+  - demo-policy-v1
+trials:
+  deterministic: 1
+  live_model: 5
+release_policy: config/release-policy.yaml
+</code></pre>
+<p>The gate rejects:</p>
+<ul>
+<li>missing expected rows;</li>
+<li>duplicates;</li>
+<li>extra/unknown case IDs;</li>
+<li>malformed schema;</li>
+<li>unknown severity/status;</li>
+<li>incomplete trials;</li>
+<li>provider/evaluator error on required cases;</li>
+<li>invalid citations;</li>
+<li>any clear-violation approval recommendation;</li>
+<li>any unsafe state mutation;</li>
+<li>results produced by an unlisted policy/prompt/model/engine version.</li>
+</ul>
+<h3 id="evaluation-cases">Evaluation cases<a class="headerlink" href="#evaluation-cases" title="Permanent link">&para;</a></h3>
+<p>Minimum 40 cases by feature freeze:</p>
+<ul>
+<li>10 clear approvals;</li>
+<li>10 clear violations, emphasizing threshold boundaries;</li>
+<li>10 ambiguous/missing-evidence cases;</li>
+<li>5 prompt-injection/adversarial receipt cases;</li>
+<li>5 operational faults and malformed-provider cases.</li>
+</ul>
+<p>For every threshold include below, exact, and above boundary. Preserve sanitized trial rows, not only aggregate percentages.</p>
+<h3 id="no-substring-only-oracle">No substring-only oracle<a class="headerlink" href="#no-substring-only-oracle" title="Permanent link">&para;</a></h3>
+<p>Evaluate:</p>
+<ul>
+<li>exact structured recommendation class;</li>
+<li>required deterministic check results;</li>
+<li>citation ID belongs to supplied policy and supports the check;</li>
+<li>explanation does not contradict structured result;</li>
+<li>prohibited fields/claims are absent;</li>
+<li>no unsupported action occurs;</li>
+<li>human label and disagreement reason.</li>
+</ul>
+<p>Add counterexamples with negation, correct keywords plus wrong conclusion, prompt echo, correct citation ID but unsupported claim, and contradictory evidence.</p>
+<h3 id="statistical-honesty">Statistical honesty<a class="headerlink" href="#statistical-honesty" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Report case count and trial count.</li>
+<li>For stochastic results, show per-case rate and Wilson confidence interval for aggregate proportions.</li>
+<li>Label the suite synthetic and bounded.</li>
+<li>Do not claim “99% accurate” from 40 cases.</li>
+<li>Separate deterministic correctness, provider schema adherence, safe recommendation, and reviewer agreement.</li>
+</ul>
+<hr />
+<h2 id="18-cicd-and-supply-chain-plan">18. CI/CD and supply-chain plan<a class="headerlink" href="#18-cicd-and-supply-chain-plan" title="Permanent link">&para;</a></h2>
+<h3 id="pull-request-pipeline">Pull-request pipeline<a class="headerlink" href="#pull-request-pipeline" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Verify both lockfiles and pinned Node/Python runtimes.</li>
+<li>Typecheck and lint the frontend and backend.</li>
+<li>Run frontend/backend unit and Python property tests.</li>
+<li>Start real PostgreSQL; run migrations and integration tests.</li>
+<li>Provider contract and fault tests.</li>
+<li>Build pinned Next.js and Python production containers.</li>
+<li>Start frontend, FastAPI, worker, and PostgreSQL; run Playwright critical flows.</li>
+<li>Run Gitleaks, dependency audit, Trivy image scan, and SBOM generation.</li>
+<li>Run offline evaluation and release gate.</li>
+<li>Upload reports/artifacts even if earlier steps fail.</li>
+</ol>
+<p>All required jobs are branch-protection checks. Shell steps use strict error propagation; wrappers return native failure codes.</p>
+<h3 id="release-pipeline">Release pipeline<a class="headerlink" href="#release-pipeline" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Require green protected commit.</li>
+<li>Build each application once; tag the commit and immutable frontend/Python image digests.</li>
+<li>Generate <code>release-manifest.json</code> with git SHA, frontend and Python image digests, Node/pnpm and Python/uv versions, both dependency-lock hashes, Alembic migration ID, Procrastinate/LangGraph/rule/prompt/schema versions, model/provider configuration, test/eval manifest hash, SBOM hash, and evidence timestamp.</li>
+<li>Deploy staging, migrate once, seed synthetic data, smoke test.</li>
+<li>Manual promotion approval by Anil.</li>
+<li>Promote the same two tested image digests to demo/production; API and worker use the identical Python digest.</li>
+<li>Run post-deploy smoke and fault-safe check.</li>
+<li>Roll back the affected image if health/smoke fails; preserve evidence and never silently roll back a destructive migration.</li>
+</ol>
+<h3 id="honest-make-targets">Honest Make targets<a class="headerlink" href="#honest-make-targets" title="Permanent link">&para;</a></h3>
+<pre><code class="language-text">make setup               # verify/install local prerequisites
+make dev                 # Next.js + FastAPI + Procrastinate worker + PostgreSQL
+make test                # frontend and Python unit/property/integration
+make verify              # all blocking offline checks
+make eval-live           # real provider trials; records usage/cost
+make reproduce-live      # fresh DB + real flow + live eval + reports
+make reproduce-offline   # replay committed sanitized raw observations
+make fault-test          # real timeout/provider/worker fault paths
+make smoke-live          # deployed golden flow
+make evidence-audit      # schemas, labels, links, expected artifacts
+make package             # only after verify; deny secrets/caches
+</code></pre>
+<p><code>reproduce-offline</code> must never be described as rerunning model behavior.</p>
+<h3 id="package-validation">Package validation<a class="headerlink" href="#package-validation" title="Permanent link">&para;</a></h3>
+<ul>
+<li>deny <code>.env*</code>, <code>*.pem</code>, keys, credentials JSON, local DB, caches, uploads, node modules, provider raw sensitive payloads;</li>
+<li>inspect ZIP/tar listing and extract into a clean temporary directory;</li>
+<li>run offline verification from extracted package;</li>
+<li>scan the final archive itself;</li>
+<li>record size, SHA-256, contents manifest, and exact source commit.</li>
+</ul>
+<hr />
+<h2 id="19-tooling-decision-matrix">19. Tooling decision matrix<a class="headerlink" href="#19-tooling-decision-matrix" title="Permanent link">&para;</a></h2>
+<p>“Recommended” is the fastest credible path for this deadline. Each row includes an open-source alternative; many recommended components are themselves open source. Verify exact versions, licenses, and hosted-service terms in <code>THIRD_PARTY_NOTICES.md</code> before release.</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Recommended now</th>
+<th>Open-source alternative</th>
+<th>Why now / switch trigger</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Source hosting</td>
+<td>GitHub</td>
+<td><a href="https://forgejo.org/">Forgejo</a> (GPL-3.0-or-later)</td>
+<td>GitHub collaboration/Actions speed. Use Forgejo for self-hosting/control.</td>
+</tr>
+<tr>
+<td>CI</td>
+<td>GitHub Actions</td>
+<td><a href="https://woodpecker-ci.org/">Woodpecker CI</a> (Apache-2.0)</td>
+<td>Minimal setup and evidence links. Switch for self-hosted SCM/runner needs.</td>
+</tr>
+<tr>
+<td>Frontend runtime</td>
+<td><a href="https://nodejs.org/">Node.js</a> pinned LTS</td>
+<td><a href="https://deno.com/runtime">Deno</a> (MIT)</td>
+<td>Node runs/builds Next.js only; it is not the domain API runtime.</td>
+</tr>
+<tr>
+<td>Python runtime</td>
+<td>CPython 3.13 pinned after compatibility spike</td>
+<td><a href="https://www.pypy.org/">PyPy</a> (MIT)</td>
+<td>Best FastAPI/AI/library compatibility; use PyPy only after profiling/compatibility proof.</td>
+</tr>
+<tr>
+<td>Frontend package manager</td>
+<td><a href="https://pnpm.io/">pnpm</a> (MIT)</td>
+<td>npm CLI (Artistic-2.0)</td>
+<td>Fast, strict, deterministic frontend install.</td>
+</tr>
+<tr>
+<td>Python package manager</td>
+<td><a href="https://docs.astral.sh/uv/">uv</a> (Apache-2.0/MIT)</td>
+<td><a href="https://python-poetry.org/">Poetry</a> (MIT)</td>
+<td>Fast locked Python environment and commands.</td>
+</tr>
+<tr>
+<td>Frontend framework</td>
+<td><a href="https://nextjs.org/docs">Next.js</a> (MIT)</td>
+<td><a href="https://svelte.dev/docs/kit">SvelteKit</a> (MIT)</td>
+<td>React UI and frontend runtime only; all domain APIs remain FastAPI.</td>
+</tr>
+<tr>
+<td>Backend API</td>
+<td><a href="https://fastapi.tiangolo.com/">FastAPI</a> (MIT)</td>
+<td><a href="https://litestar.dev/">Litestar</a> (MIT)</td>
+<td>Python AI ecosystem, Pydantic validation, dependency-based authorization, generated OpenAPI.</td>
+</tr>
+<tr>
+<td>UI primitives</td>
+<td><a href="https://ui.shadcn.com/">shadcn/ui</a> + Radix (MIT)</td>
+<td><a href="https://headlessui.com/">Headless UI</a> (MIT)</td>
+<td>Accessible primitives without copying incumbent design.</td>
+</tr>
+<tr>
+<td>Styling</td>
+<td><a href="https://tailwindcss.com/">Tailwind CSS</a> (MIT)</td>
+<td><a href="https://unocss.dev/">UnoCSS</a> (MIT)</td>
+<td>Rapid consistent UI; alternative for lighter atomic engine.</td>
+</tr>
+<tr>
+<td>Backend schema validation</td>
+<td><a href="https://docs.pydantic.dev/">Pydantic</a> (MIT)</td>
+<td><a href="https://jcristharif.com/msgspec/">msgspec</a> (BSD-3-Clause)</td>
+<td>Authoritative request/domain/provider validation in Python.</td>
+</tr>
+<tr>
+<td>Frontend form validation</td>
+<td><a href="https://zod.dev/">Zod</a> (MIT) over generated API types</td>
+<td><a href="https://valibot.dev/">Valibot</a> (MIT)</td>
+<td>UX validation only; FastAPI/Pydantic remains authoritative.</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td><a href="https://docs.sqlalchemy.org/">SQLAlchemy 2.x</a> (MIT)</td>
+<td><a href="https://sqlmodel.tiangolo.com/">SQLModel</a> (MIT)</td>
+<td>Mature transactions/locking and explicit repository mapping.</td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td><a href="https://alembic.sqlalchemy.org/">Alembic</a> (MIT)</td>
+<td>SQLAlchemy-managed versioned SQL scripts</td>
+<td>Standard SQLAlchemy migration path and revision evidence.</td>
+</tr>
+<tr>
+<td>Managed database</td>
+<td>Render PostgreSQL or Neon</td>
+<td><a href="https://www.postgresql.org/">PostgreSQL</a> (PostgreSQL License)</td>
+<td>Managed backups/operations for deadline. Self-host only with operational capacity.</td>
+</tr>
+<tr>
+<td>Authentication</td>
+<td>FastAPI-managed session/OIDC validation</td>
+<td><a href="https://www.keycloak.org/">Keycloak</a> (Apache-2.0)</td>
+<td>One authorization authority in FastAPI; Next.js forwards same-origin credentials.</td>
+</tr>
+<tr>
+<td>Object storage</td>
+<td>Cloudflare R2 or AWS S3</td>
+<td><a href="https://github.com/seaweedfs/seaweedfs">SeaweedFS</a> (Apache-2.0)</td>
+<td>Managed private objects/signed URLs. Self-host for sovereignty after ops proof.</td>
+</tr>
+<tr>
+<td>Background jobs</td>
+<td><a href="https://procrastinate.readthedocs.io/en/stable/">Procrastinate</a> (MIT) + Psycopg 3</td>
+<td><a href="https://dramatiq.io/">Dramatiq</a> (LGPL-3.0) + Redis/Valkey</td>
+<td>Selected: PostgreSQL queue/locks/retries without another infrastructure service. Record its maintainer-capacity risk and pin version.</td>
+</tr>
+<tr>
+<td>AI orchestration</td>
+<td><a href="https://docs.langchain.com/oss/python/langgraph/overview">LangGraph</a> (MIT) <code>StateGraph</code></td>
+<td>Explicit Python state-machine functions</td>
+<td>Bounded, typed assessment graph inside a job; no agent swarm and no approval source of truth.</td>
+</tr>
+<tr>
+<td>Policy checks</td>
+<td>Typed Python ClearSpend evaluator</td>
+<td><a href="https://www.openpolicyagent.org/docs">Open Policy Agent</a> (Apache-2.0)</td>
+<td>Selected: six to ten explicit expense rules and direct evidence mapping. Revisit OPA for cross-service centralized policy.</td>
+</tr>
+<tr>
+<td>Policy retrieval</td>
+<td>PostgreSQL full-text search</td>
+<td><a href="https://www.meilisearch.com/">Meilisearch</a> (MIT)</td>
+<td>No new infrastructure for small corpus. Add search service only with measured need.</td>
+</tr>
+<tr>
+<td>Managed AI</td>
+<td>OpenAI Responses + <code>gpt-5.6-terra</code> candidate</td>
+<td><a href="https://docs.vllm.ai/">vLLM</a> (Apache-2.0) + <a href="https://developers.openai.com/api/docs/models/gpt-oss-20b"><code>gpt-oss-20b</code></a> (Apache-2.0)</td>
+<td>Managed quality/vision/structured output. Local path when privacy/volume economics justify hardware.</td>
+</tr>
+<tr>
+<td>OCR fallback</td>
+<td>Managed model vision</td>
+<td><a href="https://www.paddleocr.ai/">PaddleOCR</a> (Apache-2.0)</td>
+<td>Avoid separate OCR service initially. Use PaddleOCR for local text extraction.</td>
+</tr>
+<tr>
+<td>API specification</td>
+<td>FastAPI-generated OpenAPI 3.1 + generated TS client</td>
+<td><a href="https://typespec.io/">TypeSpec</a> (MIT)</td>
+<td>Python contract is authoritative; CI blocks generated-client drift.</td>
+</tr>
+<tr>
+<td>Backend unit/integration</td>
+<td><a href="https://docs.pytest.org/">Pytest</a> (MIT)</td>
+<td>Python <code>unittest</code> (PSF)</td>
+<td>FastAPI/SQLAlchemy/LangGraph/Procrastinate coverage and fixtures.</td>
+</tr>
+<tr>
+<td>Frontend unit</td>
+<td><a href="https://vitest.dev/">Vitest</a> (MIT)</td>
+<td><a href="https://jestjs.io/">Jest</a> (MIT)</td>
+<td>Only presentation/client logic; domain rules are not duplicated here.</td>
+</tr>
+<tr>
+<td>Property testing</td>
+<td><a href="https://hypothesis.readthedocs.io/">Hypothesis</a> (MPL-2.0)</td>
+<td><a href="https://schemathesis.readthedocs.io/">Schemathesis</a> (MIT) for API properties</td>
+<td>Strong Python money/state/rule-boundary coverage.</td>
+</tr>
+<tr>
+<td>Browser E2E</td>
+<td><a href="https://playwright.dev/">Playwright</a> (Apache-2.0)</td>
+<td><a href="https://www.cypress.io/">Cypress</a> (MIT core)</td>
+<td>Multi-browser, trace/video, isolated roles.</td>
+</tr>
+<tr>
+<td>API/provider mocking</td>
+<td>HTTPX + <a href="https://lundberg.github.io/respx/">respx</a> (BSD-3-Clause)</td>
+<td><a href="https://wiremock.org/">WireMock</a> (Apache-2.0)</td>
+<td>Python-native provider contracts; use a real slow stub for timeout enforcement.</td>
+</tr>
+<tr>
+<td>Load testing</td>
+<td><a href="https://grafana.com/oss/k6/">k6</a> (AGPL-3.0)</td>
+<td><a href="https://www.artillery.io/">Artillery</a> (MPL-2.0)</td>
+<td>Scripted API thresholds and CI output.</td>
+</tr>
+<tr>
+<td>Fault injection</td>
+<td><a href="https://github.com/Shopify/toxiproxy">Toxiproxy</a> (MIT)</td>
+<td><a href="https://github.com/alexei-led/pumba">Pumba</a> (Apache-2.0)</td>
+<td>Deterministic network latency/reset. Pumba for broader container chaos later.</td>
+</tr>
+<tr>
+<td>Telemetry SDK</td>
+<td><a href="https://opentelemetry.io/docs/">OpenTelemetry</a> (Apache-2.0)</td>
+<td>Prometheus client + structured logger</td>
+<td>Vendor-neutral traces/metrics/logs.</td>
+</tr>
+<tr>
+<td>Hosted observability</td>
+<td>Grafana Cloud</td>
+<td>Prometheus + Loki + Tempo + Grafana OSS</td>
+<td>Fast dashboards now. Self-host with sustained ops need.</td>
+</tr>
+<tr>
+<td>Error tracking</td>
+<td>Sentry Cloud</td>
+<td><a href="https://glitchtip.com/">GlitchTip</a> (MIT)</td>
+<td>Rapid exception grouping. Self-host for data-control requirement.</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td>Render frontend + FastAPI + Procrastinate worker</td>
+<td><a href="https://coolify.io/">Coolify</a> (Apache-2.0) on a VPS</td>
+<td>Managed separate processes and PostgreSQL without Kubernetes/Redis/Kafka.</td>
+</tr>
+<tr>
+<td>Local containers</td>
+<td>Docker Compose</td>
+<td><a href="https://podman.io/">Podman</a> + podman-compose (Apache-2.0)</td>
+<td>Common evaluator experience. Podman for daemonless/open tooling.</td>
+</tr>
+<tr>
+<td>Secret scan</td>
+<td><a href="https://github.com/gitleaks/gitleaks">Gitleaks</a> (MIT)</td>
+<td><a href="https://github.com/Yelp/detect-secrets">detect-secrets</a> (Apache-2.0)</td>
+<td>Fast repository/artifact scan.</td>
+</tr>
+<tr>
+<td>Vulnerability scan</td>
+<td><a href="https://trivy.dev/">Trivy</a> (Apache-2.0)</td>
+<td><a href="https://github.com/anchore/grype">Grype</a> (Apache-2.0)</td>
+<td>Dependencies, images, misconfiguration in one tool.</td>
+</tr>
+<tr>
+<td>SBOM</td>
+<td><a href="https://github.com/anchore/syft">Syft</a> (Apache-2.0)</td>
+<td>Trivy SBOM generation</td>
+<td>SPDX/CycloneDX evidence and license inventory.</td>
+</tr>
+<tr>
+<td>Dependency updates</td>
+<td><a href="https://docs.renovatebot.com/">Renovate</a> (AGPL-3.0)</td>
+<td>Dependabot</td>
+<td>Grouped, scheduled pinned updates after release.</td>
+</tr>
+<tr>
+<td>Feature flags</td>
+<td>Versioned config/database flag</td>
+<td><a href="https://www.getunleash.io/">Unleash</a> (Apache-2.0 core)</td>
+<td>Avoid extra service for review-only/AI-off flags. Add platform with rollout complexity.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="selection-spike">Selection spike<a class="headerlink" href="#selection-spike" title="Permanent link">&para;</a></h3>
+<p>Time-box stack uncertainty to two hours on September 7:</p>
+<ol>
+<li>Create a Next.js screen that calls a FastAPI endpoint through the same-origin <code>/api/v1</code> route.</li>
+<li>Generate OpenAPI from FastAPI and generate/compile the TypeScript client.</li>
+<li>Commit a SQLAlchemy transaction and run an Alembic migration against PostgreSQL.</li>
+<li>Defer and execute a Procrastinate task; prove lock, retry, graceful shutdown, and stalled-task recovery.</li>
+<li>Invoke a minimal LangGraph <code>StateGraph</code> inside that task and persist its safe result.</li>
+<li>Upload/read a private synthetic receipt using a signed URL.</li>
+<li>Call the fake provider and one live structured-output request if a key is available.</li>
+<li>Record the confirmed versions and deviations in ADR-0010. Do not keep comparing tools unless a blocker appears.</li>
+</ol>
+<hr />
+<h2 id="20-environment-and-deployment-configuration">20. Environment and deployment configuration<a class="headerlink" href="#20-environment-and-deployment-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="environments">Environments<a class="headerlink" href="#environments" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Data</th>
+<th>AI mode</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local</td>
+<td>synthetic seeded</td>
+<td>fake by default, live opt-in</td>
+<td>development and offline evaluator run</td>
+</tr>
+<tr>
+<td>CI</td>
+<td>ephemeral synthetic</td>
+<td>fake/stub only</td>
+<td>deterministic blocking verification</td>
+</tr>
+<tr>
+<td>Staging/demo</td>
+<td>synthetic only</td>
+<td>live primary + fake backup</td>
+<td>user tests, grading demo, fault proof</td>
+</tr>
+<tr>
+<td>Pilot later</td>
+<td>consented customer data</td>
+<td>reviewed provider config</td>
+<td>not required for assignment</td>
+</tr>
+</tbody>
+</table>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>Use validated startup configuration. The process fails readiness if required values are absent. Example categories:</p>
+<pre><code class="language-text">APP_ENV
+DATABASE_URL
+AUTH_SECRET
+API_INTERNAL_ORIGIN
+OBJECT_STORE_ENDPOINT / BUCKET / CREDENTIAL REFS
+PROCRASTINATE_DATABASE_URL
+AI_PROVIDER
+AI_MODEL_ID
+AI_PROMPT_VERSION
+AI_TIMEOUT_MS
+AI_MAX_ATTEMPTS
+OTEL_EXPORTER_OTLP_ENDPOINT / CREDENTIAL REF
+RELEASE_SHA
+</code></pre>
+<p>Never expose server variables with a public/browser prefix. <code>.env.example</code> contains placeholders only.</p>
+<h3 id="deployment-acceptance">Deployment acceptance<a class="headerlink" href="#deployment-acceptance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The FastAPI API and Procrastinate worker run the same pinned Python image digest; the Next.js frontend runs its own pinned image digest.</li>
+<li>Browser traffic uses one public origin with <code>/api/v1</code> reverse-proxied to FastAPI; FastAPI remains the authorization authority.</li>
+<li>Health checks do not leak secrets or full dependency errors.</li>
+<li>Procrastinate graceful shutdown stops new jobs and handles/returns work within the platform deadline; stalled-task recovery is tested.</li>
+<li>Region is selected to colocate app and database; document actual region.</li>
+<li>HTTPS is enforced.</li>
+<li>Database and bucket are not publicly accessible.</li>
+<li>Seed command refuses to run unless environment explicitly allows synthetic seeding.</li>
+</ul>
+<hr />
+<h2 id="21-detailed-implementation-work-breakdown">21. Detailed implementation work breakdown<a class="headerlink" href="#21-detailed-implementation-work-breakdown" title="Permanent link">&para;</a></h2>
+<p>The plan assumes implementation starts September 7. P0 is required for a credible submission; P1 strengthens grading; P2 is only if all release gates are green.</p>
+<h3 id="september-7-architecture-skeleton-and-transactional-core">September 7 — architecture skeleton and transactional core<a class="headerlink" href="#september-7-architecture-skeleton-and-transactional-core" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Priority</th>
+<th>Owner</th>
+<th>Acceptance</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Initialize pinned Next.js/pnpm frontend and FastAPI/uv backend with CI</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Both clean install/build/typecheck/test.</td>
+<td>CI run + both lock hashes.</td>
+</tr>
+<tr>
+<td>Add PostgreSQL/SQLAlchemy/Alembic migrations and synthetic seed</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Two organizations and four roles seeded.</td>
+<td>Clean DB migration test.</td>
+</tr>
+<tr>
+<td>Create module boundaries and architecture lint rules</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Forbidden imports fail test.</td>
+<td>Negative fixture.</td>
+</tr>
+<tr>
+<td>Implement expense/policy/assessment/audit schema</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Constraints and indexes applied.</td>
+<td>Integration schema tests.</td>
+</tr>
+<tr>
+<td>Accept ADRs 0001–0005</td>
+<td>P0</td>
+<td>Team, Anil accountable</td>
+<td>Tradeoffs/revisit triggers recorded.</td>
+<td>Evidence link.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="september-8-policy-submission-deterministic-evaluation">September 8 — policy, submission, deterministic evaluation<a class="headerlink" href="#september-8-policy-submission-deterministic-evaluation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Priority</th>
+<th>Owner</th>
+<th>Acceptance</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Policy draft/publish/version</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Published version immutable.</td>
+<td>Mutation rejection test.</td>
+</tr>
+<tr>
+<td>Expense form/API/idempotency</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Retry produces one claim/job/event.</td>
+<td>Concurrency test.</td>
+</tr>
+<tr>
+<td>Private synthetic receipt upload</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Non-owner cannot access; invalid upload rejected.</td>
+<td>Security integration test.</td>
+</tr>
+<tr>
+<td>Six deterministic rule types</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Below/exact/above boundaries pass expected results.</td>
+<td>Unit/property suite.</td>
+</tr>
+<tr>
+<td>First end-to-end trace</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Claim reaches awaiting review without AI.</td>
+<td>Playwright/API trace.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="september-9-ai-contract-and-safe-orchestration">September 9 — AI contract and safe orchestration<a class="headerlink" href="#september-9-ai-contract-and-safe-orchestration" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Priority</th>
+<th>Owner</th>
+<th>Acceptance</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI provider port + deterministic fake</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Offline cases reproducible.</td>
+<td>Contract suite.</td>
+</tr>
+<tr>
+<td>Procrastinate task + bounded LangGraph StateGraph</td>
+<td>P0</td>
+<td>Anil</td>
+<td>One queued job executes graph once and safely persists result.</td>
+<td>PostgreSQL integration trace.</td>
+</tr>
+<tr>
+<td>OpenAI adapter and Structured Outputs</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Schema-valid response through real orchestrator.</td>
+<td>Sanitized live row.</td>
+</tr>
+<tr>
+<td>Citation allowlist and aggregation</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Fake/unknown citations cannot display or approve.</td>
+<td>Counterexample tests.</td>
+</tr>
+<tr>
+<td>Real deadline/retry/fallback</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Slow stub becomes Needs review.</td>
+<td>Timed integration trace.</td>
+</tr>
+<tr>
+<td>Initial 20-case manifest</td>
+<td>P0</td>
+<td>Anil + Lay label review</td>
+<td>Expected cases complete exactly once.</td>
+<td>Gate reconciliation.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="september-10-approvals-audit-rbac">September 10 — approvals, audit, RBAC<a class="headerlink" href="#september-10-approvals-audit-rbac" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Priority</th>
+<th>Owner</th>
+<th>Acceptance</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reviewer inbox/detail/explanation</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Checks/citations/uncertainty visible.</td>
+<td>E2E and usability task.</td>
+</tr>
+<tr>
+<td>Human decision + override reason</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Atomic and idempotent.</td>
+<td>DB/concurrency test.</td>
+</tr>
+<tr>
+<td>Request information/resubmission</td>
+<td>P0</td>
+<td>Anil</td>
+<td>New attempt; old history preserved.</td>
+<td>E2E.</td>
+</tr>
+<tr>
+<td>Audit timeline and hash verifier</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Altered event detected.</td>
+<td>Integrity negative test.</td>
+</tr>
+<tr>
+<td>Role/tenant matrix</td>
+<td>P0</td>
+<td>Anil</td>
+<td>All negative paths denied.</td>
+<td>Authz integration matrix.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="september-11-observability-security-complete-evaluation">September 11 — observability, security, complete evaluation<a class="headerlink" href="#september-11-observability-security-complete-evaluation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Priority</th>
+<th>Owner</th>
+<th>Acceptance</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OTel traces/metrics/log redaction</td>
+<td>P0</td>
+<td>Anil</td>
+<td>One correlation ID links complete flow; no raw PII.</td>
+<td>Trace screenshot + log scan.</td>
+</tr>
+<tr>
+<td>Health, degraded state, runbook</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Provider outage visible and review continues.</td>
+<td>Fault test.</td>
+</tr>
+<tr>
+<td>ASVS subset/threat model</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Controls mapped to tests/limitations.</td>
+<td>Evidence audit.</td>
+</tr>
+<tr>
+<td>Complete 40-case suite, ≥5 live trials where required</td>
+<td>P0</td>
+<td>Anil + Lay</td>
+<td>Manifest reconciles; no critical false approval.</td>
+<td>Live eval gate.</td>
+</tr>
+<tr>
+<td>Measure latency/tokens/cost</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Trial-level records with labels.</td>
+<td>Cost/report generator.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="september-12-deployment-reproducibility-feature-freeze">September 12 — deployment, reproducibility, feature freeze<a class="headerlink" href="#september-12-deployment-reproducibility-feature-freeze" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Priority</th>
+<th>Owner</th>
+<th>Acceptance</th>
+<th>Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Container and managed deployment</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Pinned frontend image; same pinned Python image for API/worker; HTTPS; private DB/storage.</td>
+<td>Manifest + platform evidence.</td>
+</tr>
+<tr>
+<td><code>reproduce-live/offline</code>, <code>verify</code>, <code>fault-test</code></td>
+<td>P0</td>
+<td>Anil</td>
+<td>Honest commands run from clean checkout.</td>
+<td>Captured clean logs.</td>
+</tr>
+<tr>
+<td>Blocking CI/release gate</td>
+<td>P0</td>
+<td>Anil</td>
+<td>Deliberate missing case/native failure blocks.</td>
+<td>Negative CI run.</td>
+</tr>
+<tr>
+<td>User-critical fixes</td>
+<td>P0</td>
+<td>Team</td>
+<td>Evidence-linked only.</td>
+<td>Decision trace.</td>
+</tr>
+<tr>
+<td>Feature freeze</td>
+<td>P0</td>
+<td>Anil</td>
+<td>No P2 additions.</td>
+<td>Tagged RC.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="september-13-hardening-and-grading-evidence">September 13 — hardening and grading evidence<a class="headerlink" href="#september-13-hardening-and-grading-evidence" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Run load, accessibility, package secret, dependency, image, SBOM, and license checks.</li>
+<li>Perform clean extracted-package offline verification.</li>
+<li>Complete runbooks, ADRs, API, data handling, and known limitations.</li>
+<li>Capture telemetry/failure/recovery evidence.</li>
+<li>Publish Week 5 checkpoint with measured results and remaining risks.</li>
+</ul>
+<h3 id="september-14-adversarial-review-and-rehearsal">September 14 — adversarial review and rehearsal<a class="headerlink" href="#september-14-adversarial-review-and-rehearsal" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Ask a reviewer to disprove every high-value claim using static repository evidence.</li>
+<li>Test deployed demo in incognito on another machine/network.</li>
+<li>Rehearse normal, ambiguous, override, and provider-outage flow.</li>
+<li>Fix only release blockers; regenerate evidence after every fix.</li>
+<li>Tag final candidate and record all digests/hashes.</li>
+</ul>
+<h3 id="september-15-final-verification-and-submission">September 15 — final verification and submission<a class="headerlink" href="#september-15-final-verification-and-submission" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Execute <code>make verify</code>, <code>make smoke-live</code>, and package audit.</li>
+<li>Confirm 3–5-user evidence is anonymized and linked.</li>
+<li>Reconcile rubric matrix: no missing artifact, command, owner, or limitation.</li>
+<li>Finalize AI-use and total-cost ledger.</li>
+<li>Submit with several hours of IST buffer.</li>
+</ul>
+<hr />
+<h2 id="22-architecture-decision-records-required">22. Architecture Decision Records required<a class="headerlink" href="#22-architecture-decision-records-required" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Decision</th>
+<th>Status by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0001</td>
+<td>Bounded reimbursement workflow and non-goals</td>
+<td>Sep 7</td>
+</tr>
+<tr>
+<td>0002</td>
+<td>Next.js frontend + FastAPI backend monorepo; modular Python backend over microservice proliferation</td>
+<td>Sep 7</td>
+</tr>
+<tr>
+<td>0003</td>
+<td>Human final authority and fail-closed outcomes</td>
+<td>Sep 7</td>
+</tr>
+<tr>
+<td>0004</td>
+<td>Hybrid deterministic + AI responsibilities</td>
+<td>Sep 7</td>
+</tr>
+<tr>
+<td>0005</td>
+<td>PostgreSQL as state/Procrastinate-job/audit/search backbone; no Redis/Kafka</td>
+<td>Sep 7</td>
+</tr>
+<tr>
+<td>0006</td>
+<td>Tenant isolation strategy and RLS deferral/choice</td>
+<td>Sep 8</td>
+</tr>
+<tr>
+<td>0007</td>
+<td>Append-only audit and hash-chain limitations</td>
+<td>Sep 9</td>
+</tr>
+<tr>
+<td>0008</td>
+<td>LangGraph bounded workflow, provider adapter, model benchmark, and fake mode</td>
+<td>Sep 9</td>
+</tr>
+<tr>
+<td>0009</td>
+<td>Evaluation/release-gate policy</td>
+<td>Sep 9</td>
+</tr>
+<tr>
+<td>0010</td>
+<td>FastAPI, SQLAlchemy/Alembic, Procrastinate, LangGraph, and deployment choices after spike</td>
+<td>Sep 9</td>
+</tr>
+<tr>
+<td>0011</td>
+<td>Receipt data flow, retention, and model disclosure</td>
+<td>Sep 10</td>
+</tr>
+<tr>
+<td>0012</td>
+<td>Observability backend and redaction</td>
+<td>Sep 11</td>
+</tr>
+</tbody>
+</table>
+<p>Each ADR includes context, decision, evidence, alternatives, positive/negative consequences, operational impact, and revisit trigger.</p>
+<hr />
+<h2 id="23-risk-register">23. Risk register<a class="headerlink" href="#23-risk-register" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>P/I</th>
+<th>Mitigation</th>
+<th>Owner</th>
+<th>Due</th>
+<th>Verification</th>
+<th>Closure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model false approval</td>
+<td>H/H</td>
+<td>Deterministic precedence, human decision, manifest gate.</td>
+<td>Anil</td>
+<td>Sep 11</td>
+<td>Clear-violation/injection suite.</td>
+<td>Zero known critical false approvals in pinned suite.</td>
+</tr>
+<tr>
+<td>Invalid citation</td>
+<td>M/H</td>
+<td>Allowlist + FK + validation fallback.</td>
+<td>Anil</td>
+<td>Sep 9</td>
+<td>Fake-ID counterexample.</td>
+<td>100% displayed citations valid.</td>
+</tr>
+<tr>
+<td>Tenant data leak</td>
+<td>M/H</td>
+<td>Tenant context, RBAC, negative tests.</td>
+<td>Anil</td>
+<td>Sep 10</td>
+<td>Two-org matrix.</td>
+<td>All required denials pass.</td>
+</tr>
+<tr>
+<td>Provider outage/rate limit</td>
+<td>H/M</td>
+<td>Deadline, retry, fake mode, Needs review.</td>
+<td>Anil</td>
+<td>Sep 11</td>
+<td>Real slow/error stub.</td>
+<td>Bounded fallback and visible telemetry.</td>
+</tr>
+<tr>
+<td>Deadline scope failure</td>
+<td>H/H</td>
+<td>P0/P1/P2, freeze Sep 12, managed stack.</td>
+<td>Anil</td>
+<td>daily</td>
+<td>Daily demo/burndown.</td>
+<td>P0 golden flow deployed.</td>
+</tr>
+<tr>
+<td>Weak user evidence</td>
+<td>M/H</td>
+<td>Recruit 5–7 to complete 3–5; task observations.</td>
+<td>Lay/Niraj</td>
+<td>Sep 11</td>
+<td>Evidence matrix.</td>
+<td>Minimum relevant users complete.</td>
+</tr>
+<tr>
+<td>Unsupported business claims</td>
+<td>M/H</td>
+<td>Evidence labels and sensitivity ranges.</td>
+<td>Lay</td>
+<td>Sep 13</td>
+<td>Evidence audit.</td>
+<td>Every number labeled/sourceable.</td>
+</tr>
+<tr>
+<td>Secret/private data leak</td>
+<td>M/H</td>
+<td>Synthetic data, Gitleaks, archive rules, review.</td>
+<td>Anil</td>
+<td>Sep 13</td>
+<td>Scan repo/final archive.</td>
+<td>No known secret/private record.</td>
+</tr>
+<tr>
+<td>Demo network/model failure</td>
+<td>M/M</td>
+<td>deterministic fake mode, backup recording/screens.</td>
+<td>Anil</td>
+<td>Sep 14</td>
+<td>offline rehearsal.</td>
+<td>Full demo works offline.</td>
+</tr>
+</tbody>
+</table>
+<p>P/I means probability/impact. Update daily; risks are not closed merely because mitigation code exists—verification must pass.</p>
+<hr />
+<h2 id="24-required-technical-evidence-bundle">24. Required technical evidence bundle<a class="headerlink" href="#24-required-technical-evidence-bundle" title="Permanent link">&para;</a></h2>
+<pre><code class="language-text">docs/
+  architecture/
+    technical-architecture.md
+    c4-context.md
+    c4-containers.md
+    data-flow.md
+    threat-model.md
+  adr/
+    0001-*.md ...
+  api/
+    openapi.yaml
+  operations/
+    deployment.md
+    rollback.md
+    provider-outage.md
+    audit-integrity.md
+  evidence/
+    rubric-matrix.csv
+    release-manifest.json
+    clean-reproduction.log
+    smoke-live.log
+    fault-test.log
+    test-summary.md
+    eval-summary.md
+    cost-ledger.csv
+    security-control-matrix.csv
+    sbom.spdx.json
+    licenses.csv
+    package-manifest.json
+  ai-disclosure.md
+  known-limitations.md
+</code></pre>
+<p>Raw evidence should be machine-readable where possible. Summaries are generated from raw rows; do not manually type metrics into the deck independently.</p>
+<h3 id="final-technical-narrative">Final technical narrative<a class="headerlink" href="#final-technical-narrative" title="Permanent link">&para;</a></h3>
+<p>The architect should be able to demonstrate, in order:</p>
+<ol>
+<li>An employee submits a synthetic claim.</li>
+<li>A trace shows deterministic checks before AI.</li>
+<li>The recommendation cites the exact immutable policy version.</li>
+<li>A human decision is distinct and authorized.</li>
+<li>Override reason and audit provenance are visible.</li>
+<li>A provider timeout safely becomes Needs review.</li>
+<li>A cross-tenant access attempt is denied.</li>
+<li>The CI gate rejects a missing critical evaluation row.</li>
+<li>The release manifest identifies the exact code/image/prompt/model/test inputs.</li>
+<li>Measured user and operational evidence is distinguished from assumptions.</li>
+</ol>
+<p>That narrative directly answers the 25-point engineering rubric and supports the evidence, pricing, roadmap, pitch, and individual-ownership criteria.</p>
+<hr />
+<h2 id="25-explicitly-deferred-architecture">25. Explicitly deferred architecture<a class="headerlink" href="#25-explicitly-deferred-architecture" title="Permanent link">&para;</a></h2>
+<p>Do not implement before the deadline:</p>
+<ul>
+<li>microservices, Kubernetes, service mesh, Kafka, Redis, or a separate vector database;</li>
+<li>event sourcing as the entire persistence model;</li>
+<li>autonomous approval/rejection/payment;</li>
+<li>policy authoring by AI without admin publication;</li>
+<li>cross-transaction behavioral fraud claims;</li>
+<li>native accounting, card, bank, WhatsApp, Slack, or email integration;</li>
+<li>production multi-region/active-active;</li>
+<li>formal SOC 2/ISO certification claims;</li>
+<li>model fine-tuning.</li>
+</ul>
+<p>Revisit only with measured volume, availability, privacy, integration, or organizational evidence.</p>
+<hr />
+<h2 id="26-immediate-implementation-checklist">26. Immediate implementation checklist<a class="headerlink" href="#26-immediate-implementation-checklist" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] Accept this architecture or record deviations in ADR-0010.</li>
+<li>[ ] Create rubric matrix before more implementation.</li>
+<li>[ ] Run the two-hour stack spike.</li>
+<li>[ ] Initialize pinned runtime, lockfile, CI, migrations, and two-tenant seed.</li>
+<li>[ ] Implement the state machine and deterministic rules before live AI.</li>
+<li>[ ] Create the fake provider and pinned eval manifest before the managed adapter.</li>
+<li>[ ] Prove atomic decision/audit/idempotency behavior.</li>
+<li>[ ] Prove cross-tenant denial and real timeout fallback.</li>
+<li>[ ] Instrument one complete correlation trace.</li>
+<li>[ ] Deploy by September 12 and freeze features.</li>
+<li>[ ] Use September 13–15 for adversarial verification, evidence, and rehearsal.</li>
+</ul>
+<p>The architecture’s governing rule is:</p>
+<blockquote>
+<p><strong>No AI recommendation is trusted merely because it is well written. It is accepted only when the application can validate its structure, evidence, policy provenance, safety precedence, and operational trace—and a human still owns the final decision.</strong></p>
+</blockquote></main>
+  <a class="top-link" href="#top" aria-label="Return to top">↑ Top</a>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "strict" });
+  </script>
+</body>
+</html>
