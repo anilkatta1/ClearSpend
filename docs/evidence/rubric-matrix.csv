@@ -1,0 +1,7 @@
+rubric_area,implementation,evidence,verification,status
+Core flow,Expense submission through human decision,synthetic live smoke trace,make smoke,implemented_mvp
+Architecture,C4 plan and ADRs,architecture documents,documentation review,complete
+Risk tests,State transitions rule boundaries precedence fallback and injection,pytest and Hypothesis suite,make test,implemented_mvp
+Reproducibility,Docker Compose migrations seed and lockfiles,successful clean image build,make demo,implemented_mvp
+Telemetry,Correlation IDs structured logs health checks and outbox signals,live service logs,make smoke,implemented_mvp
+Security,Server-derived tenant scope RBAC and synthetic data,live cross-tenant 404 plus threat model,make smoke,implemented_mvp

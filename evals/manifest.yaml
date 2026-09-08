@@ -1,0 +1,11 @@
+suite_version: 1
+required_case_ids:
+  - clear-pass-001
+  - prohibited-alcohol-001
+  - missing-receipt-001
+  - injection-receipt-001
+policy_versions: [demo-policy-v1]
+trials:
+  deterministic: 1
+  live_model: 5
+release_policy: config/release-policy.yaml

@@ -1,0 +1,9 @@
+version: 1
+required_checks:
+  - backend-unit
+  - backend-property
+  - frontend-typecheck
+  - compose-validation
+forbidden_recommendations:
+  - clear_violation_approved
+minimum_required_cases: 4
