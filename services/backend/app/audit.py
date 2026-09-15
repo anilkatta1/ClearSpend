@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db import AuditEvent
+from app.db import AuditEvent, Organization
 
 ZERO_HASH = "0" * 64
 
@@ -25,6 +25,9 @@ def append_audit(
     metadata: dict[str, Any],
     correlation_id: str,
 ) -> AuditEvent:
+    session.scalar(
+        select(Organization.id).where(Organization.id == organization_id).with_for_update()
+    )
     last = session.scalar(
         select(AuditEvent)
         .where(AuditEvent.organization_id == organization_id)

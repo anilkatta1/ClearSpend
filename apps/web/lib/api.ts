@@ -10,8 +10,26 @@ export type Expense = {
   row_version: number;
   revision: number;
   receipt_present: boolean;
+  receipt_id: string | null;
+  receipt: ReceiptUpload | null;
+  information_request_message: string | null;
+  requested_fields: string[];
+  policy_citations: Array<{ id: string; title: string; text: string }>;
+  export: { id: string; status: string; account_code: string; cost_center: string } | null;
   recommendation: string | null;
-  checks: Array<{ check_key: string; status: string; explanation: string; source: string }>;
+  checks: Array<{ check_key: string; status: string; reason_code: string; explanation: string; source: string; policy_section_ids: string[] }>;
+};
+
+export type ReceiptUpload = {
+  id: string;
+  filename: string;
+  content_type: string;
+  extraction_status: string;
+  extracted_merchant: string | null;
+  extracted_date: string | null;
+  extracted_amount_minor: number | null;
+  extracted_currency: string | null;
+  preview_url?: string;
 };
 
 export const identities = {
@@ -22,15 +40,22 @@ export const identities = {
 } as const;
 
 export async function api<T>(path: string, identity: string, init?: RequestInit): Promise<T> {
+  const multipart = init?.body instanceof FormData;
   const response = await fetch(`/api/v1${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", "X-Demo-User": identity, ...init?.headers },
+    headers: { ...(multipart ? {} : { "Content-Type": "application/json" }), "X-Demo-User": identity, ...init?.headers },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }));
     throw new Error(body.detail ?? body.title ?? "Request failed");
   }
   return response.json() as Promise<T>;
+}
+
+export async function download(path: string, identity: string): Promise<Blob> {
+  const response = await fetch(path, { headers: { "X-Demo-User": identity } });
+  if (!response.ok) throw new Error("Download failed");
+  return response.blob();
 }
 
 export function formatMoney(minor: number, currency: string): string {

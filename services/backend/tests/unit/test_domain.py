@@ -13,7 +13,7 @@ from app.domain import (
     aggregate_recommendation,
     ensure_transition,
 )
-from app.rules import evaluate_rules
+from app.rules import evaluate_receipt_match, evaluate_rules
 
 
 def check(status: CheckStatus, source: str = "DETERMINISTIC") -> PolicyCheck:
@@ -92,3 +92,26 @@ def test_prohibited_category_is_case_insensitive() -> None:
         facts(category="Alcohol"), [("prohibited_category", {"categories": ["alcohol"]}, "s")]
     )[0]
     assert result.status == CheckStatus.FAIL
+
+
+def test_currency_mismatch_never_compares_minor_units() -> None:
+    result = evaluate_rules(
+        facts(amount=50_000),
+        [("amount_limit", {"limit_minor": 5_000_000, "currency": "USD"}, "s")],
+    )[0]
+    assert result.status == CheckStatus.UNKNOWN
+    assert result.reason_code == "CURRENCY_MISMATCH"
+
+
+def test_receipt_mismatch_requires_review() -> None:
+    value = facts(amount=225_000)
+    result = evaluate_receipt_match(
+        value,
+        extracted_amount_minor=125_000,
+        extracted_currency="INR",
+        extracted_merchant="Synthetic Hotel",
+        extraction_status="EXTRACTED",
+        section_id="receipt-evidence",
+    )
+    assert result.status == CheckStatus.UNKNOWN
+    assert result.reason_code == "RECEIPT_AMOUNT_MISMATCH"

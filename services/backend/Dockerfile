@@ -2,6 +2,9 @@ FROM python:3.13-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH"
 WORKDIR /app
 ENV PYTHONPATH=/app
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir uv==0.8.13
 COPY pyproject.toml uv.lock* ./
 RUN uv sync --frozen --no-dev

@@ -24,11 +24,12 @@ def principal_from_header(
 ) -> Principal:
     if not demo_user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "X-Demo-User is required")
-    membership = session.scalar(
+    memberships = session.scalars(
         select(Membership).join(Membership.user).where(Membership.user.has(email=demo_user.lower()))
-    )
-    if membership is None:
+    ).all()
+    if len(memberships) != 1:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown demo identity")
+    membership = memberships[0]
     return Principal(
         user_id=membership.user_id,
         organization_id=membership.organization_id,

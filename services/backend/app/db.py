@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -113,7 +114,12 @@ class Expense(Base, TimestampMixin):
     __tablename__ = "expenses"
     __table_args__ = (
         CheckConstraint("amount_minor > 0", name="ck_expense_positive_amount"),
-        UniqueConstraint("organization_id", "idempotency_key", name="uq_expense_idempotency"),
+        UniqueConstraint(
+            "organization_id",
+            "submitter_id",
+            "idempotency_key",
+            name="uq_expense_actor_idempotency",
+        ),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
@@ -129,10 +135,37 @@ class Expense(Base, TimestampMixin):
     row_version: Mapped[int] = mapped_column(Integer, default=1)
     revision: Mapped[int] = mapped_column(Integer, default=1)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     receipt_present: Mapped[bool] = mapped_column(Boolean, default=False)
     receipt_hash: Mapped[str | None] = mapped_column(String(64))
+    receipt_id: Mapped[str | None] = mapped_column(ForeignKey("receipts.id"), index=True)
+    information_request_message: Mapped[str | None] = mapped_column(String(500))
+    requested_fields: Mapped[list[str]] = mapped_column(JSON, default=list)
     policy_version: Mapped[PolicyVersion] = relationship(lazy="selectin")
     attempts: Mapped[list["AssessmentAttempt"]] = relationship(lazy="selectin")
+    receipt: Mapped["Receipt | None"] = relationship(lazy="selectin")
+    accounting_export: Mapped["AccountingExport | None"] = relationship(
+        lazy="selectin", uselist=False
+    )
+
+
+class Receipt(Base, TimestampMixin):
+    __tablename__ = "receipts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    uploader_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    filename: Mapped[str] = mapped_column(String(200), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    content: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    extraction_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    extracted_text: Mapped[str] = mapped_column(Text, default="")
+    extracted_merchant: Mapped[str | None] = mapped_column(String(160))
+    extracted_date: Mapped[date | None] = mapped_column(Date)
+    extracted_amount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    extracted_currency: Mapped[str | None] = mapped_column(String(3))
 
 
 class AssessmentAttempt(Base, TimestampMixin):
@@ -154,7 +187,14 @@ class AssessmentAttempt(Base, TimestampMixin):
 
 class ApprovalDecision(Base, TimestampMixin):
     __tablename__ = "approval_decisions"
-    __table_args__ = (UniqueConstraint("organization_id", "idempotency_key"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "actor_id",
+            "idempotency_key",
+            name="uq_decision_actor_idempotency",
+        ),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
     expense_id: Mapped[str] = mapped_column(ForeignKey("expenses.id"), index=True)
@@ -163,6 +203,23 @@ class ApprovalDecision(Base, TimestampMixin):
     reason: Mapped[str] = mapped_column(String(500), nullable=False)
     observed_recommendation: Mapped[str] = mapped_column(String(30), nullable=False)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    requested_fields: Mapped[list[str]] = mapped_column(JSON, default=list)
+    reviewer_active_ms: Mapped[int | None] = mapped_column(Integer)
+
+
+class AccountingExport(Base, TimestampMixin):
+    __tablename__ = "accounting_exports"
+    __table_args__ = (UniqueConstraint("expense_id"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    expense_id: Mapped[str] = mapped_column(ForeignKey("expenses.id"), index=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    account_code: Mapped[str] = mapped_column(String(80), nullable=False)
+    cost_center: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False)
+    csv_content: Mapped[str | None] = mapped_column(Text)
+    error_code: Mapped[str | None] = mapped_column(String(80))
 
 
 class AuditEvent(Base):

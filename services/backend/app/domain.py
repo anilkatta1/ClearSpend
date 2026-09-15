@@ -21,6 +21,9 @@ class ExpenseState(StrEnum):
     INFORMATION_REQUESTED = "INFORMATION_REQUESTED"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+    READY_TO_EXPORT = "READY_TO_EXPORT"
+    EXPORTED = "EXPORTED"
+    EXPORT_FAILED = "EXPORT_FAILED"
 
 
 class CheckStatus(StrEnum):
@@ -70,11 +73,14 @@ ALLOWED_TRANSITIONS: dict[ExpenseState, frozenset[ExpenseState]] = {
     ExpenseState.SUBMITTED: frozenset({ExpenseState.ASSESSING}),
     ExpenseState.ASSESSING: frozenset({ExpenseState.AWAITING_REVIEW}),
     ExpenseState.AWAITING_REVIEW: frozenset(
-        {ExpenseState.INFORMATION_REQUESTED, ExpenseState.APPROVED, ExpenseState.REJECTED}
+        {ExpenseState.INFORMATION_REQUESTED, ExpenseState.READY_TO_EXPORT, ExpenseState.REJECTED}
     ),
     ExpenseState.INFORMATION_REQUESTED: frozenset({ExpenseState.SUBMITTED}),
     ExpenseState.APPROVED: frozenset(),
     ExpenseState.REJECTED: frozenset(),
+    ExpenseState.READY_TO_EXPORT: frozenset({ExpenseState.EXPORTED, ExpenseState.EXPORT_FAILED}),
+    ExpenseState.EXPORT_FAILED: frozenset({ExpenseState.EXPORTED}),
+    ExpenseState.EXPORTED: frozenset(),
 }
 
 

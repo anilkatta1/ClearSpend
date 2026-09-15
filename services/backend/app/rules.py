@@ -1,3 +1,4 @@
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -23,6 +24,9 @@ def evaluate_rules(
         validate_rule_params(rule_type, params)
         key = f"{rule_type}:{index}"
         if rule_type == "receipt_required":
+            if facts.currency != str(params.get("currency", "INR")):
+                results.append(_check(key, CheckStatus.UNKNOWN, "CURRENCY_MISMATCH", section_id))
+                continue
             required = facts.amount_minor >= int(params["threshold_minor"])
             status = (
                 CheckStatus.FAIL if required and not facts.receipt_present else CheckStatus.PASS
@@ -36,6 +40,9 @@ def evaluate_rules(
                 )
             )
         elif rule_type == "amount_limit":
+            if facts.currency != str(params.get("currency", "INR")):
+                results.append(_check(key, CheckStatus.UNKNOWN, "CURRENCY_MISMATCH", section_id))
+                continue
             passed = facts.amount_minor <= int(params["limit_minor"])
             results.append(
                 _check(
@@ -78,3 +85,27 @@ def evaluate_rules(
                 )
             )
     return results
+
+
+def evaluate_receipt_match(
+    facts: ClaimFacts,
+    *,
+    extracted_amount_minor: int | None,
+    extracted_currency: str | None,
+    extracted_merchant: str | None,
+    extraction_status: str,
+    section_id: str,
+) -> PolicyCheck:
+    if extraction_status != "EXTRACTED":
+        return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_UNREADABLE", section_id)
+    if extracted_currency != facts.currency:
+        return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_CURRENCY_MISMATCH", section_id)
+    if extracted_amount_minor != facts.amount_minor:
+        return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_AMOUNT_MISMATCH", section_id)
+    normalized_claim = re.sub(r"\W+", "", facts.merchant).lower()
+    normalized_receipt = re.sub(r"\W+", "", extracted_merchant or "").lower()
+    if not normalized_receipt or not (
+        normalized_claim in normalized_receipt or normalized_receipt in normalized_claim
+    ):
+        return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_MERCHANT_MISMATCH", section_id)
+    return _check("receipt_match", CheckStatus.PASS, "RECEIPT_MATCHED", section_id)

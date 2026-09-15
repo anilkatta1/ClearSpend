@@ -42,8 +42,16 @@ def create_org(session, slug: str, name: str, users: list[tuple[str, str, Role]]
         sequence=1,
     )
     section.rules = [
-        PolicyRule(rule_type="receipt_required", params={"threshold_minor": 100000}, priority=10),
-        PolicyRule(rule_type="amount_limit", params={"limit_minor": 5000000}, priority=20),
+        PolicyRule(
+            rule_type="receipt_required",
+            params={"threshold_minor": 100000, "currency": "INR"},
+            priority=10,
+        ),
+        PolicyRule(
+            rule_type="amount_limit",
+            params={"limit_minor": 5000000, "currency": "INR"},
+            priority=20,
+        ),
         PolicyRule(
             rule_type="prohibited_category",
             params={"categories": ["alcohol", "personal"]},

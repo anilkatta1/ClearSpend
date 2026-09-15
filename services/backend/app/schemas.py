@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -31,18 +31,19 @@ class PolicyDraftIn(StrictModel):
 class ExpenseIn(StrictModel):
     merchant: str = Field(min_length=1, max_length=160)
     amount_minor: int = Field(gt=0, le=100_000_000)
-    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    currency: Literal["INR"] = "INR"
     incurred_date: date
     category: str = Field(min_length=1, max_length=80)
     purpose: str = Field(max_length=500)
-    receipt_present: bool = False
-    receipt_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    receipt_id: str = Field(min_length=36, max_length=36)
 
 
 class DecisionIn(StrictModel):
     action: DecisionAction
     reason: str = Field(default="", max_length=500)
     expected_row_version: int = Field(gt=0)
+    requested_fields: list[Literal["purpose", "receipt"]] = Field(default_factory=list)
+    reviewer_active_ms: int | None = Field(default=None, ge=0, le=3_600_000)
 
     @field_validator("reason")
     @classmethod
@@ -52,8 +53,13 @@ class DecisionIn(StrictModel):
 
 class ResubmissionIn(StrictModel):
     purpose: str = Field(min_length=1, max_length=500)
-    receipt_present: bool
-    receipt_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    receipt_id: str | None = Field(default=None, min_length=36, max_length=36)
+
+
+class ExportIn(StrictModel):
+    account_code: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9._-]+$")
+    cost_center: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9 ._-]+$")
+    expected_row_version: int = Field(gt=0)
 
 
 class ExpenseOut(BaseModel):

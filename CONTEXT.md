@@ -12,3 +12,8 @@
 | Approval Decision | The final human action: approve, reject, or request information. |
 | Override | A human decision that differs from the observed recommendation and therefore requires a reason. |
 | Audit Event | An append-only, hash-linked record of a material domain action. |
+| Receipt | Evidence uploaded before a claim; extraction proposes editable fields and never overrides employee confirmation. |
+| Receipt Match | A deterministic comparison of receipt amount, currency, and merchant against the confirmed claim. An unreadable or mismatched receipt requires review. |
+| Information Request | A reviewer-authored message plus explicit fields the employee must correct before reassessment. |
+| Ready to Export | An approved claim awaiting human confirmation of accounting code and cost center. It is not paid. |
+| Accounting Export | An idempotent accountant-ready record generated after approval and human coding confirmation. It does not move money. |

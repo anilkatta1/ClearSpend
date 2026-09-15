@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./styles.css";
+import "./release.css";
 
 export const metadata: Metadata = {
   title: "ClearSpend",
