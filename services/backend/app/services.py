@@ -1,6 +1,6 @@
 import csv
 import io
-from typing import Any
+from typing import Any, Protocol
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -22,6 +22,10 @@ from app.rules import evaluate_receipt_match
 
 class DomainConflict(Exception):
     pass
+
+
+class AccountingExportRenderer(Protocol):
+    def __call__(self, *, expense: Expense, account_code: str, cost_center: str) -> str: ...
 
 
 def active_policy(session: Session, organization_id: str) -> PolicyVersion:
@@ -92,6 +96,7 @@ def serialize_expense(expense: Expense) -> dict[str, Any]:
                 "account_code": expense.accounting_export.account_code,
                 "cost_center": expense.accounting_export.cost_center,
                 "error_code": expense.accounting_export.error_code,
+                "error_detail": expense.accounting_export.error_detail,
             }
             if expense.accounting_export
             else None
@@ -158,6 +163,7 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
         extracted_amount_minor=receipt.extracted_amount_minor if receipt else None,
         extracted_currency=receipt.extracted_currency if receipt else None,
         extracted_merchant=receipt.extracted_merchant if receipt else None,
+        extracted_date=receipt.extracted_date if receipt else None,
         extraction_status=receipt.extraction_status if receipt else "NO_RECEIPT",
         section_id=receipt_section_id,
     )
@@ -273,21 +279,7 @@ def decide(
     return decision
 
 
-def export_expense(
-    session: Session,
-    *,
-    expense: Expense,
-    actor_id: str,
-    account_code: str,
-    cost_center: str,
-    expected_version: int,
-    correlation_id: str,
-) -> AccountingExport:
-    if expense.row_version != expected_version or expense.state not in {
-        ExpenseState.READY_TO_EXPORT,
-        ExpenseState.EXPORT_FAILED,
-    }:
-        raise DomainConflict("Expense is stale or not ready for accounting export")
+def render_accounting_csv(*, expense: Expense, account_code: str, cost_center: str) -> str:
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\n")
     writer.writerow(
@@ -312,21 +304,71 @@ def export_expense(
             cost_center,
         ]
     )
+    return output.getvalue()
+
+
+def export_expense(
+    session: Session,
+    *,
+    expense: Expense,
+    actor_id: str,
+    account_code: str,
+    cost_center: str,
+    expected_version: int,
+    correlation_id: str,
+    renderer: AccountingExportRenderer = render_accounting_csv,
+) -> AccountingExport:
+    if expense.row_version != expected_version or expense.state not in {
+        ExpenseState.READY_TO_EXPORT,
+        ExpenseState.EXPORT_FAILED,
+    }:
+        raise DomainConflict("Expense is stale or not ready for accounting export")
     record = expense.accounting_export or AccountingExport(
         organization_id=expense.organization_id,
         expense_id=expense.id,
         actor_id=actor_id,
         account_code=account_code,
         cost_center=cost_center,
-        status="EXPORTED",
+        status="READY_TO_EXPORT",
     )
     record.actor_id = actor_id
     record.account_code = account_code
     record.cost_center = cost_center
-    record.status = "EXPORTED"
-    record.csv_content = output.getvalue()
-    record.error_code = None
     session.add(record)
+    try:
+        csv_content = renderer(
+            expense=expense,
+            account_code=account_code,
+            cost_center=cost_center,
+        )
+    except Exception:
+        error_code = "CSV_GENERATION_FAILED"
+        error_detail = "CSV generation failed; verify coding values and retry."
+        record.status = ExpenseState.EXPORT_FAILED
+        record.csv_content = None
+        record.error_code = error_code
+        record.error_detail = error_detail
+        if expense.state == ExpenseState.READY_TO_EXPORT:
+            ensure_transition(ExpenseState.READY_TO_EXPORT, ExpenseState.EXPORT_FAILED)
+        expense.state = ExpenseState.EXPORT_FAILED
+        expense.row_version += 1
+        append_audit(
+            session,
+            organization_id=expense.organization_id,
+            actor_id=actor_id,
+            entity_type="expense",
+            entity_id=expense.id,
+            action="expense.export_failed",
+            metadata={"error_code": error_code, "format": "CSV"},
+            correlation_id=correlation_id,
+        )
+        session.commit()
+        raise DomainConflict(f"{error_code}: {error_detail}") from None
+
+    record.status = ExpenseState.EXPORTED
+    record.csv_content = csv_content
+    record.error_code = None
+    record.error_detail = None
     ensure_transition(ExpenseState(expense.state), ExpenseState.EXPORTED)
     expense.state = ExpenseState.EXPORTED
     expense.row_version += 1

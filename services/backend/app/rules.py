@@ -1,5 +1,6 @@
 import re
 from collections.abc import Iterable
+from datetime import date
 from typing import Any
 
 from app.domain import CheckStatus, ClaimFacts, PolicyCheck, validate_rule_params
@@ -93,6 +94,7 @@ def evaluate_receipt_match(
     extracted_amount_minor: int | None,
     extracted_currency: str | None,
     extracted_merchant: str | None,
+    extracted_date: date | None,
     extraction_status: str,
     section_id: str,
 ) -> PolicyCheck:
@@ -102,6 +104,8 @@ def evaluate_receipt_match(
         return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_CURRENCY_MISMATCH", section_id)
     if extracted_amount_minor != facts.amount_minor:
         return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_AMOUNT_MISMATCH", section_id)
+    if extracted_date != facts.incurred_date:
+        return _check("receipt_match", CheckStatus.UNKNOWN, "RECEIPT_DATE_MISMATCH", section_id)
     normalized_claim = re.sub(r"\W+", "", facts.merchant).lower()
     normalized_receipt = re.sub(r"\W+", "", extracted_merchant or "").lower()
     if not normalized_receipt or not (

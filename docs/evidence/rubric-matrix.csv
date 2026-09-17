@@ -4,7 +4,7 @@ Architecture,C4 plan and ADRs,architecture documents,documentation review,comple
 Risk tests,State transitions rule boundaries precedence fallback and injection,pytest and Hypothesis suite,make test,implemented_mvp
 Reproducibility,Docker Compose migrations seed and lockfiles,successful clean image build,make demo,implemented_mvp
 Telemetry,Correlation IDs structured logs health checks and outbox signals,live service logs,make smoke,implemented_mvp
-Release risk paths,"Receipt validation and matching, INR-safe rules, actor/body-safe idempotency, tenant denial, approval-to-export, audit verification",unit suite plus live Postgres smoke,python scripts/smoke.py,implemented_mvp
+Release risk paths,"Merchant/date/amount receipt matching, INR-safe rules, actor/body-safe idempotency, tenant denial, durable export failure/retry, outbox recovery, audit verification",unit suite plus PostgreSQL integration tests and automated live smoke,"pytest; python scripts/smoke.py; GitHub Actions",implemented_mvp
 Ramp-aligned scope,"Receipt-first reimbursement review with information request and accounting CSV; no money movement",product assessment response,docs/product/ramp-release-response.md,implemented_mvp
 Security,Server-derived tenant scope RBAC and synthetic data,live cross-tenant 404 plus threat model,make smoke,implemented_mvp
 Pricing/GTM,"Free guided evaluation, paid design-partner pilot, included-claim metric, WTP gates, unit economics, and rejected alternatives",docs/pricing.md,documentation review,hypothesis_documented

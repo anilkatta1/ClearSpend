@@ -116,7 +116,11 @@ export default function Home() {
       const result = await api<{ download_url: string }>(`/expenses/${expense.id}/exports`, identity, { method: "POST", body: JSON.stringify({ account_code, cost_center, expected_row_version: expense.row_version }) });
       const blob = await download(result.download_url, identity);
       const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `clears-spend-${expense.id}.csv`; link.click(); URL.revokeObjectURL(link.href); await refresh();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Export failed"); }
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Export failed";
+      await refresh();
+      setError(message);
+    }
     finally { setBusy(false); }
   }
 

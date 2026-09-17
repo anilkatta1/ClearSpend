@@ -220,6 +220,7 @@ class AccountingExport(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(30), nullable=False)
     csv_content: Mapped[str | None] = mapped_column(Text)
     error_code: Mapped[str | None] = mapped_column(String(80))
+    error_detail: Mapped[str | None] = mapped_column(String(500))
 
 
 class AuditEvent(Base):

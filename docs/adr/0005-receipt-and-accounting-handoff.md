@@ -9,7 +9,7 @@ Review approval alone does not complete an accountant's job. The MVP must begin 
 
 ## Decision
 
-Claims begin with a bounded JPEG, PNG, or PDF upload. Open-source Tesseract extracts image text and pypdf extracts embedded PDF text. Extraction only proposes editable fields; deterministic code compares the confirmed amount, currency, and merchant and routes unreadable or mismatched evidence to review.
+Claims begin with a bounded JPEG, PNG, or PDF upload. Open-source Tesseract extracts image text and pypdf extracts embedded PDF text. Extraction only proposes editable fields; deterministic code compares the confirmed amount, currency, merchant, and incurred date and routes unreadable or mismatched evidence to review.
 
 Approval transitions a claim to `READY_TO_EXPORT`. A reviewer or admin confirms account code and cost center, after which ClearSpend creates an auditable CSV export and transitions to `EXPORTED`. Export never means paid.
 

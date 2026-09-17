@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 import pytest
 from hypothesis import given
@@ -16,7 +17,10 @@ from app.domain import (
 from app.rules import evaluate_receipt_match, evaluate_rules
 
 
-def check(status: CheckStatus, source: str = "DETERMINISTIC") -> PolicyCheck:
+def check(
+    status: CheckStatus,
+    source: Literal["DETERMINISTIC", "AI"] = "DETERMINISTIC",
+) -> PolicyCheck:
     return PolicyCheck(
         check_key="example",
         source=source,
@@ -110,8 +114,23 @@ def test_receipt_mismatch_requires_review() -> None:
         extracted_amount_minor=125_000,
         extracted_currency="INR",
         extracted_merchant="Synthetic Hotel",
+        extracted_date=date(2026, 9, 1),
         extraction_status="EXTRACTED",
         section_id="receipt-evidence",
     )
     assert result.status == CheckStatus.UNKNOWN
     assert result.reason_code == "RECEIPT_AMOUNT_MISMATCH"
+
+
+def test_receipt_date_mismatch_requires_review() -> None:
+    result = evaluate_receipt_match(
+        facts(amount=225_000),
+        extracted_amount_minor=225_000,
+        extracted_currency="INR",
+        extracted_merchant="Example Hotel",
+        extracted_date=date(2026, 9, 2),
+        extraction_status="EXTRACTED",
+        section_id="receipt-evidence",
+    )
+    assert result.status == CheckStatus.UNKNOWN
+    assert result.reason_code == "RECEIPT_DATE_MISMATCH"

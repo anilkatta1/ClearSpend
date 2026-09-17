@@ -34,6 +34,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+markers = ["integration: requires a migrated PostgreSQL test database"]
 
 [tool.ruff]
 line-length = 100

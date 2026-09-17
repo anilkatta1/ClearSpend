@@ -15,7 +15,7 @@ export type Expense = {
   information_request_message: string | null;
   requested_fields: string[];
   policy_citations: Array<{ id: string; title: string; text: string }>;
-  export: { id: string; status: string; account_code: string; cost_center: string } | null;
+  export: { id: string; status: string; account_code: string; cost_center: string; error_code: string | null; error_detail: string | null } | null;
   recommendation: string | null;
   checks: Array<{ check_key: string; status: string; reason_code: string; explanation: string; source: string; policy_section_ids: string[] }>;
 };
