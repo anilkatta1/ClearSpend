@@ -351,6 +351,7 @@ Enforce frontend boundaries with ESLint and backend boundaries with Ruff/import-
 - A submitted claim has a policy version.
 - A final claim is not silently reopened or overwritten.
 - Receipt object keys are opaque and private.
+- Receipt replacement appends an `ExpenseReceipt` revision; it never overwrites historical evidence.
 
 #### AssessmentAttempt
 
@@ -358,6 +359,7 @@ Enforce frontend boundaries with ESLint and backend boundaries with Ruff/import-
 - The record separates deterministic checks, provider contribution, aggregate recommendation, and technical status.
 - Provider text is untrusted until schema and citation validation pass.
 - A failed attempt can never create `APPROVE_RECOMMENDED`.
+- Each attempt pins the exact current receipt-version IDs and SHA-256 hashes used as evidence.
 
 #### ApprovalDecision
 
@@ -407,7 +409,8 @@ Enforce the transition matrix in domain code and with database constraints/optim
 | `policy_sections` | policy version, stable key, title, source text, sequence; unique version/key. |
 | `policy_rules` | section, type enum, typed JSON params, priority; schema validated before insert/publication. |
 | `expenses` | org, submitter, policy version, merchant, amount minor, currency, incurred date, category, purpose, state, row version. |
-| `receipts` | org, expense, object key, MIME, size, SHA-256, extraction status; unique org/hash if exact duplicates are flagged. |
+| `receipts` | org, uploader, opaque object key/bucket, MIME, size, SHA-256, encryption version, scan status/result, bounded security flags, extraction fields. Raw bytes are not stored for new uploads. |
+| `expense_receipts` | org, expense, receipt, revision, position, evidence type, current marker, superseded link, uploader, timestamp; append-only evidence history. |
 | `assessment_attempts` | org, expense, attempt number, technical status, recommendation, engine/prompt/model/provider versions, usage/latency. |
 | `assessment_checks` | attempt, stable check key, source, status, reason code, bounded explanation. |
 | `assessment_citations` | check, policy section FK, optional offsets/source hash. |
@@ -451,13 +454,13 @@ Enforce the transition matrix in domain code and with database constraints/optim
 ### Claim submission transaction
 
 1. Authenticate and resolve tenant membership.
-2. Validate body with Pydantic and reject unknown fields.
-3. Validate receipt upload token/metadata.
-4. Read active published policy version.
-5. In one SQLAlchemy database transaction create expense, attach receipt metadata, append `expense.submitted`, and create an assessment-outbox row.
-6. Return `202 Accepted`, claim ID, state, and correlation ID.
-7. Retried client request with same idempotency key returns the original result.
-8. The outbox dispatcher defers a Procrastinate job after commit; a reconciliation task repairs submitted claims that have neither an active job nor a completed assessment.
+2. Before claim submission, validate upload size, allowlisted MIME, and magic bytes; encrypt with AES-256-GCM using the opaque object key as authenticated data and store in the private quarantine bucket.
+3. Stream raw bytes to the isolated ClamAV service. Scanner error fails closed; no parser or OCR runs first.
+4. For malware-clean data, enforce exact image/PDF structure and resource limits, reject encrypted/active/embedded PDF content, then extract text and flag prompt-injection patterns.
+5. Promote only security-cleared ciphertext to the clean bucket; blocked objects remain quarantined and are not downloadable/submittable.
+6. Validate the expense body with Pydantic, load the employee-owned clean receipt, and read the active published policy version.
+7. In one SQLAlchemy transaction create the expense, append the immutable receipt revision, append `expense.submitted`, and create an assessment-outbox row.
+8. Return `202 Accepted`, claim ID, state, and correlation ID. A retry with the same idempotency key returns the original result; the outbox relay repairs enqueue failure.
 
 ### Assessment worker
 

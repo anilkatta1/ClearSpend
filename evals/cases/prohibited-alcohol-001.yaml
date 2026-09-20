@@ -1,0 +1,15 @@
+id: prohibited-alcohol-001
+facts:
+  amount_minor: 5000
+  currency: INR
+  category: alcohol
+  merchant: Example Bar
+  purpose: Team social
+  incurred_date: 2026-09-15
+  submitted_date: 2026-09-16
+  receipt_present: true
+rules:
+  - type: prohibited_category
+    params: {categories: [alcohol]}
+    section_id: prohibited-spend
+expected_recommendation: REJECT_RECOMMENDED

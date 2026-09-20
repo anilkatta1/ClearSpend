@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from datetime import UTC, date, datetime
+from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -106,7 +107,7 @@ class PolicyRule(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     section_id: Mapped[str] = mapped_column(ForeignKey("policy_sections.id"), index=True)
     rule_type: Mapped[str] = mapped_column(String(60), nullable=False)
-    params: Mapped[dict] = mapped_column(JSON, nullable=False)
+    params: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
 
 
@@ -145,6 +146,9 @@ class Expense(Base, TimestampMixin):
     policy_version: Mapped[PolicyVersion] = relationship(lazy="selectin")
     attempts: Mapped[list["AssessmentAttempt"]] = relationship(lazy="selectin")
     receipt: Mapped["Receipt | None"] = relationship(lazy="selectin")
+    receipt_versions: Mapped[list["ExpenseReceipt"]] = relationship(
+        cascade="all, delete-orphan", lazy="selectin", foreign_keys="ExpenseReceipt.expense_id"
+    )
     accounting_export: Mapped["AccountingExport | None"] = relationship(
         lazy="selectin", uselist=False
     )
@@ -159,13 +163,41 @@ class Receipt(Base, TimestampMixin):
     content_type: Mapped[str] = mapped_column(String(80), nullable=False)
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    content: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    content: Mapped[bytes | None] = mapped_column(LargeBinary)
+    storage_bucket: Mapped[str | None] = mapped_column(String(120))
+    storage_key: Mapped[str | None] = mapped_column(String(500), unique=True)
+    encryption_version: Mapped[str | None] = mapped_column(String(30))
+    scan_status: Mapped[str] = mapped_column(String(30), default="SCAN_PENDING", index=True)
+    scan_result: Mapped[str | None] = mapped_column(String(500))
+    security_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
     extraction_status: Mapped[str] = mapped_column(String(30), nullable=False)
     extracted_text: Mapped[str] = mapped_column(Text, default="")
     extracted_merchant: Mapped[str | None] = mapped_column(String(160))
     extracted_date: Mapped[date | None] = mapped_column(Date)
     extracted_amount_minor: Mapped[int | None] = mapped_column(BigInteger)
     extracted_currency: Mapped[str | None] = mapped_column(String(3))
+
+
+class ExpenseReceipt(Base):
+    __tablename__ = "expense_receipts"
+    __table_args__ = (
+        UniqueConstraint("expense_id", "revision", "receipt_id"),
+        UniqueConstraint("expense_id", "revision", "position"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
+    expense_id: Mapped[str] = mapped_column(ForeignKey("expenses.id"), index=True)
+    receipt_id: Mapped[str] = mapped_column(ForeignKey("receipts.id"), index=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    attachment_type: Mapped[str] = mapped_column(
+        String(40), default="PRIMARY_RECEIPT", nullable=False
+    )
+    is_current: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    supersedes_id: Mapped[str | None] = mapped_column(ForeignKey("expense_receipts.id"))
+    uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    receipt: Mapped[Receipt] = relationship(lazy="selectin")
 
 
 class AssessmentAttempt(Base, TimestampMixin):
@@ -180,8 +212,10 @@ class AssessmentAttempt(Base, TimestampMixin):
     engine_version: Mapped[str] = mapped_column(String(30), default="rules-v1")
     provider: Mapped[str] = mapped_column(String(40), default="fake")
     model: Mapped[str | None] = mapped_column(String(100))
-    checks: Mapped[list[dict]] = mapped_column(JSON, nullable=False)
+    checks: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
     citations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    receipt_version_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    receipt_hashes: Mapped[list[str]] = mapped_column(JSON, default=list)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
 
 
@@ -233,7 +267,7 @@ class AuditEvent(Base):
     entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
     entity_id: Mapped[str] = mapped_column(String(36), index=True)
     action: Mapped[str] = mapped_column(String(80), nullable=False)
-    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     correlation_id: Mapped[str] = mapped_column(String(80), index=True)
     prior_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     event_hash: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -246,7 +280,7 @@ class OutboxEvent(Base):
     organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id"), index=True)
     aggregate_id: Mapped[str] = mapped_column(String(36), index=True)
     event_type: Mapped[str] = mapped_column(String(80), nullable=False)
-    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

@@ -14,6 +14,19 @@ class Settings(BaseSettings):
     ai_provider: str = "fake"
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.6-terra"
+    demo_auth_enabled: bool = True
+    receipt_storage_endpoint: str = "http://localhost:9000"
+    receipt_storage_access_key: str = "clears_spend"
+    receipt_storage_secret_key: str = "clears_spend_dev_secret"
+    receipt_quarantine_bucket: str = "clears-spend-quarantine"
+    receipt_clean_bucket: str = "clears-spend-clean"
+    receipt_storage_secure: bool = False
+    receipt_encryption_key: str = (
+        "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+    )
+    clamav_host: str = "localhost"
+    clamav_port: int = 3310
+    malware_scan_required: bool = True
     log_level: str = "INFO"
 
 

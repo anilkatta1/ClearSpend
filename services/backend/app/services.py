@@ -15,7 +15,15 @@ from app.db import (
     PolicySection,
     PolicyVersion,
 )
-from app.domain import ClaimFacts, DecisionAction, ExpenseState, Recommendation, ensure_transition
+from app.domain import (
+    CheckStatus,
+    ClaimFacts,
+    DecisionAction,
+    ExpenseState,
+    PolicyCheck,
+    Recommendation,
+    ensure_transition,
+)
 from app.graph import assess_claim
 from app.rules import evaluate_receipt_match
 
@@ -78,10 +86,31 @@ def serialize_expense(expense: Expense) -> dict[str, Any]:
                 "extracted_date": expense.receipt.extracted_date,
                 "extracted_amount_minor": expense.receipt.extracted_amount_minor,
                 "extracted_currency": expense.receipt.extracted_currency,
+                "scan_status": expense.receipt.scan_status,
+                "security_flags": expense.receipt.security_flags,
             }
             if expense.receipt
             else None
         ),
+        "receipt_history": [
+            {
+                "version_id": item.id,
+                "receipt_id": item.receipt_id,
+                "revision": item.revision,
+                "attachment_type": item.attachment_type,
+                "is_current": item.is_current,
+                "supersedes_id": item.supersedes_id,
+                "content_hash": item.receipt.content_hash,
+                "filename": item.receipt.filename,
+                "scan_status": item.receipt.scan_status,
+                "security_flags": item.receipt.security_flags,
+                "created_at": item.created_at,
+            }
+            for item in sorted(
+                expense.receipt_versions,
+                key=lambda value: (value.revision, value.position, value.created_at),
+            )
+        ],
         "information_request_message": expense.information_request_message,
         "requested_fields": expense.requested_fields,
         "policy_citations": [
@@ -170,6 +199,25 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
     state["checks"] = [*state["checks"], receipt_check]
     if receipt_check.status == "UNKNOWN" and state.get("recommendation") == Recommendation.APPROVE:
         state["recommendation"] = Recommendation.REVIEW
+    receipt_security_flags = receipt.security_flags if receipt else []
+    if any(flag.startswith("PROMPT_INJECTION_PATTERN_") for flag in receipt_security_flags):
+        state["checks"] = [
+            *state["checks"],
+            PolicyCheck(
+                check_key="receipt_prompt_injection",
+                source="DETERMINISTIC",
+                status=CheckStatus.UNKNOWN,
+                reason_code="UNTRUSTED_RECEIPT_INSTRUCTION",
+                explanation=(
+                    "Instruction-like text was detected in the receipt; the content is treated "
+                    "as evidence only and requires human review."
+                ),
+                policy_section_ids=[receipt_section_id],
+                evidence_refs=[receipt.content_hash] if receipt else [],
+            ),
+        ]
+        state["recommendation"] = Recommendation.REVIEW
+    current_receipt_versions = [item for item in expense.receipt_versions if item.is_current]
     attempt = AssessmentAttempt(
         organization_id=expense.organization_id,
         expense_id=expense.id,
@@ -178,6 +226,8 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
         recommendation=state.get("recommendation", Recommendation.REVIEW),
         checks=[check.model_dump(mode="json") for check in state["checks"]],
         citations=state["section_ids"],
+        receipt_version_ids=[item.id for item in current_receipt_versions],
+        receipt_hashes=[item.receipt.content_hash for item in current_receipt_versions],
         provider=state.get("provider", "none"),
         model=state.get("model"),
     )

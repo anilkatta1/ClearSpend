@@ -1,0 +1,18 @@
+id: clear-pass-001
+facts:
+  amount_minor: 225000
+  currency: INR
+  category: travel
+  merchant: Example Hotel
+  purpose: Customer architecture workshop
+  incurred_date: 2026-09-15
+  submitted_date: 2026-09-16
+  receipt_present: true
+rules:
+  - type: amount_limit
+    params: {limit_minor: 5000000, currency: INR}
+    section_id: spend-limit
+  - type: business_purpose_required
+    params: {}
+    section_id: business-purpose
+expected_recommendation: APPROVE_RECOMMENDED

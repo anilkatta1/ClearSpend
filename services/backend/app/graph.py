@@ -4,7 +4,14 @@ from langgraph.graph import END, START, StateGraph
 
 from app.ai import AIProvider, AssessmentAIInput, FakeAIProvider, OpenAIProvider, ai_check
 from app.config import settings
-from app.domain import ClaimFacts, PolicyCheck, Recommendation, aggregate_recommendation
+from app.domain import (
+    CheckStatus,
+    ClaimFacts,
+    PolicyCheck,
+    Recommendation,
+    aggregate_recommendation,
+)
+from app.receipt_security import prompt_injection_flags
 from app.rules import evaluate_rules
 
 
@@ -34,6 +41,27 @@ def semantic_needed(state: AssessmentState) -> str:
 
 def run_semantic(state: AssessmentState) -> AssessmentState:
     facts = state["facts"]
+    untrusted_flags = prompt_injection_flags("\n".join((facts.merchant, facts.purpose)))
+    if untrusted_flags:
+        return {
+            "checks": [
+                *state["checks"],
+                PolicyCheck(
+                    check_key="semantic_input_guardrail",
+                    source="AI",
+                    status=CheckStatus.UNKNOWN,
+                    reason_code="UNTRUSTED_INSTRUCTION",
+                    explanation=(
+                        "Instruction-like text was blocked before the model call and requires "
+                        "human review."
+                    ),
+                    policy_section_ids=state["section_ids"][:1],
+                    evidence_refs=untrusted_flags,
+                ),
+            ],
+            "provider": "guardrail",
+            "model": None,
+        }
     provider: AIProvider
     if settings.ai_provider == "openai" and settings.openai_api_key:
         provider = OpenAIProvider()

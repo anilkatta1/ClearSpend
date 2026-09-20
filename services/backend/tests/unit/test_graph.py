@@ -19,6 +19,8 @@ def test_injection_like_receipt_text_becomes_needs_review() -> None:
         [("business_purpose_required", {}, "general")],
     )
     assert state["recommendation"] == Recommendation.REVIEW
+    assert state["provider"] == "guardrail"
+    assert state["model"] is None
 
 
 def test_clear_prohibition_skips_ai_and_recommends_rejection() -> None:

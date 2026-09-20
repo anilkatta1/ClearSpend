@@ -796,9 +796,15 @@ Call this **tamper-evident at the application layer**, not legally immutable or 
 
 - Accept only PDF/JPEG/PNG after signature validation and a small size limit.
 
-- Use random private object keys and short-lived signed links.
+- Encrypt receipt bytes with authenticated encryption into a private quarantine bucket, scan with an isolated malware service before parsing, and promote only clean content.
+
+- Apply exact-format, page/pixel/frame, encrypted-PDF, active-content, and embedded-file checks after malware scanning and before OCR.
+
+- Use random private object keys; decrypt only through the authorized API for this MVP. Add short-lived signed links only if direct client access is later required.
 
 - Never render uploaded HTML/SVG; hash receipts for exact-duplicate detection.
+
+- Append replacement evidence as an immutable receipt revision with its hash, actor, timestamp, current marker, and supersession link.
 
 ---
 
@@ -814,7 +820,7 @@ Call this **tamper-evident at the application layer**, not legally immutable or 
 
 | Role escalation | Unauthorized decision/policy change. | Server RBAC, deny by default. | Permission matrix tests. |
 
-| Prompt injection | Manipulated recommendation. | Data delimiters, no tools, schema/citation validation. | Adversarial eval. |
+| Prompt injection | Manipulated recommendation. | Pattern guard before model invocation, data delimiters, no tools, schema/citation validation, human-only decision. | Adversarial eval. |
 
 | Hallucinated citation | Misleading explanation. | Section-ID allowlist + DB foreign key. | Contract tests. |
 
@@ -822,7 +828,7 @@ Call this **tamper-evident at the application layer**, not legally immutable or 
 
 | Duplicate request | Duplicate decisions/events. | Idempotency key, unique constraint, atomic transaction. | Concurrency test. |
 
-| Malicious upload | XSS/malware/resource use. | Signature/type/size validation, private storage. | Upload tests. |
+| Malicious upload | XSS/malware/resource use. | Signature/type/size validation, encrypted quarantine, fail-closed ClamAV-before-parser, deep format/resource/active-content checks, clean-only preview. | Unit tests and live EICAR smoke. |
 
 | Sensitive logs | Privacy leak. | IDs/error categories only; redaction. | Log inspection. |
 
@@ -1733,4 +1739,3 @@ Use one decision filter:
 > **Does this help a real finance reviewer reach a faster, safer, explainable reimbursement decision—and can we prove it by September 15?**
 
 If not, it is outside this MVP.
-

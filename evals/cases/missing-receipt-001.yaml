@@ -1,0 +1,15 @@
+id: missing-receipt-001
+facts:
+  amount_minor: 225000
+  currency: INR
+  category: travel
+  merchant: Example Hotel
+  purpose: Customer workshop
+  incurred_date: 2026-09-15
+  submitted_date: 2026-09-16
+  receipt_present: false
+rules:
+  - type: receipt_required
+    params: {threshold_minor: 100000, currency: INR}
+    section_id: receipt-requirement
+expected_recommendation: REJECT_RECOMMENDED

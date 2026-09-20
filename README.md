@@ -7,6 +7,8 @@ ClearSpend is a bounded, human-in-the-loop finance-operations assistant for reim
 - Next.js + TypeScript frontend
 - FastAPI + SQLAlchemy backend
 - PostgreSQL for domain state and Procrastinate jobs
+- MinIO private object storage with application-side AES-256-GCM receipt encryption
+- ClamAV in an isolated service for fail-closed malware scanning
 - Procrastinate worker containing a bounded LangGraph workflow
 - Fake AI provider by default; optional OpenAI adapter
 
@@ -21,9 +23,9 @@ Open <http://localhost:3000>. Demo identities are selected in the UI. API docs a
 
 The release flow is:
 
-1. Employee uploads a JPEG, PNG, or PDF receipt and verifies the extracted merchant, date, and INR amount.
+1. Employee uploads a JPEG, PNG, or PDF receipt. ClearSpend encrypts it into quarantine, malware-scans it before parsing, validates its structure, then promotes only a clean object for preview and extraction.
 2. The durable worker evaluates deterministic policy and receipt matching, then uses bounded LangGraph assistance only for ambiguity.
-3. A reviewer sees evidence and pinned policy citations, then approves, rejects, or requests named information.
+3. A reviewer sees evidence and pinned policy citations, then approves, rejects, or requests named information. Replacement receipts create immutable, linked revisions; prior evidence remains visible to auditors.
 4. Approval enters `READY_TO_EXPORT`; a reviewer confirms account coding and downloads the recorded CSV export.
 
 ## Verify

@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.db import (
     Base,
@@ -15,7 +16,9 @@ from app.db import (
 from app.domain import Role
 
 
-def create_org(session, slug: str, name: str, users: list[tuple[str, str, Role]]) -> Organization:
+def create_org(
+    session: Session, slug: str, name: str, users: list[tuple[str, str, Role]]
+) -> Organization:
     org = Organization(slug=slug, name=name)
     session.add(org)
     session.flush()

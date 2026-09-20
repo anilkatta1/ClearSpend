@@ -1,9 +1,10 @@
 from types import SimpleNamespace
+from typing import Any
 
 from app.audit import ZERO_HASH, canonical_json, verify_chain
 
 
-def event(sequence: int, prior_hash: str, event_hash: str):
+def event(sequence: int, prior_hash: str, event_hash: str) -> Any:
     return SimpleNamespace(
         organization_id="org",
         sequence=sequence,

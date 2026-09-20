@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -5,6 +6,7 @@ from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import Membership, get_session
 from app.domain import Role
 
@@ -22,6 +24,11 @@ def principal_from_header(
     session: Annotated[Session, Depends(get_session)],
     demo_user: Annotated[str | None, Header(alias="X-Demo-User")] = None,
 ) -> Principal:
+    if not settings.demo_auth_enabled or settings.app_env.lower() == "production":
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Demo identities are disabled; configure the production OIDC identity adapter",
+        )
     if not demo_user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "X-Demo-User is required")
     memberships = session.scalars(
@@ -42,7 +49,7 @@ def principal_from_header(
 PrincipalDep = Annotated[Principal, Depends(principal_from_header)]
 
 
-def require_roles(*allowed: Role):
+def require_roles(*allowed: Role) -> Callable[[Principal], Principal]:
     def dependency(principal: PrincipalDep) -> Principal:
         if principal.role not in allowed:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Role is not permitted")

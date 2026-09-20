@@ -1,9 +1,8 @@
-import asyncio
 import hashlib
 import json
 import statistics
 from contextvars import ContextVar
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 from uuid import uuid4
 
 import structlog
@@ -14,12 +13,14 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.audit import append_audit, verify_chain
+from app.config import settings
 from app.db import (
     AccountingExport,
     ApprovalDecision,
     AssessmentAttempt,
     AuditEvent,
     Expense,
+    ExpenseReceipt,
     Organization,
     OutboxEvent,
     PolicyRule,
@@ -31,7 +32,15 @@ from app.db import (
 )
 from app.domain import ExpenseState, Role, ensure_transition, validate_rule_params
 from app.jobs import enqueue_assessment
-from app.receipts import MAX_RECEIPT_BYTES, ReceiptError, extract_receipt, validate_receipt
+from app.receipt_security import MalwareScanError, inspect_receipt, malware_scanner_ready
+from app.receipt_storage import (
+    ReceiptStorageError,
+    ensure_receipt_buckets,
+    get_receipt,
+    promote_receipt,
+    put_quarantined_receipt,
+)
+from app.receipts import MAX_RECEIPT_BYTES, ReceiptError, validate_receipt
 from app.schemas import DecisionIn, ExpenseIn, ExportIn, PolicyDraftIn, ResubmissionIn
 from app.security import Principal, PrincipalDep, require_roles
 from app.services import DomainConflict, active_policy, decide, export_expense, serialize_expense
@@ -45,6 +54,23 @@ SessionDep = Annotated[Session, Depends(get_session)]
 def request_hash(value: dict[str, Any]) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def serialize_receipt(receipt: Receipt) -> dict[str, Any]:
+    return {
+        "id": receipt.id,
+        "filename": receipt.filename,
+        "content_type": receipt.content_type,
+        "extraction_status": receipt.extraction_status,
+        "scan_status": receipt.scan_status,
+        "scan_result": receipt.scan_result,
+        "security_flags": receipt.security_flags,
+        "extracted_merchant": receipt.extracted_merchant,
+        "extracted_date": receipt.extracted_date,
+        "extracted_amount_minor": receipt.extracted_amount_minor,
+        "extracted_currency": receipt.extracted_currency,
+        "preview_url": f"/api/v1/receipts/{receipt.id}/content",
+    }
 
 
 def problem(
@@ -70,7 +96,7 @@ async def correlation_middleware(request: Request, call_next: Any) -> Response:
     correlation_id = supplied if 8 <= len(supplied) <= 80 else str(uuid4())
     token = correlation_context.set(correlation_id)
     try:
-        response = await call_next(request)
+        response = cast(Response, await call_next(request))
         response.headers["X-Correlation-ID"] = correlation_id
         logger.info(
             "request.completed",
@@ -117,6 +143,9 @@ def live() -> dict[str, str]:
 @app.get("/health/ready")
 def ready(session: SessionDep) -> dict[str, str]:
     session.execute(text("select 1"))
+    ensure_receipt_buckets()
+    if settings.malware_scan_required and not malware_scanner_ready():
+        raise HTTPException(503, "Malware scanner is not ready")
     return {"status": "ready"}
 
 
@@ -269,18 +298,17 @@ def list_policies(session: SessionDep, principal: PrincipalDep) -> list[dict[str
 
 
 @app.post("/api/v1/receipts", status_code=201)
-async def upload_receipt(
+def upload_receipt(
     session: SessionDep,
     principal: Annotated[Principal, Depends(require_roles(Role.EMPLOYEE, Role.ADMIN))],
     file: Annotated[UploadFile, File()],
 ) -> dict[str, Any]:
-    content = await file.read(MAX_RECEIPT_BYTES + 1)
+    content = file.file.read(MAX_RECEIPT_BYTES + 1)
     content_type = file.content_type or ""
     try:
         validate_receipt(content, content_type)
     except ReceiptError as exc:
         raise HTTPException(415, str(exc)) from exc
-    extracted = await asyncio.to_thread(extract_receipt, content, content_type)
     receipt = Receipt(
         organization_id=principal.organization_id,
         uploader_id=principal.user_id,
@@ -288,38 +316,98 @@ async def upload_receipt(
         content_type=content_type,
         size_bytes=len(content),
         content_hash=hashlib.sha256(content).hexdigest(),
-        content=content,
-        extraction_status=extracted.status,
-        extracted_text=extracted.text,
-        extracted_merchant=extracted.merchant,
-        extracted_date=extracted.incurred_date,
-        extracted_amount_minor=extracted.amount_minor,
-        extracted_currency=extracted.currency,
+        content=None,
+        extraction_status="PENDING_SECURITY_SCAN",
+        scan_status="SCAN_PENDING",
+        scan_result="Awaiting malware and document safety checks",
+        security_flags=[],
     )
     session.add(receipt)
     session.flush()
+    object_key = f"{principal.organization_id}/{receipt.id}/original"
+    try:
+        put_quarantined_receipt(object_key, content, content_type)
+    except ReceiptStorageError as exc:
+        session.rollback()
+        raise HTTPException(503, "Encrypted receipt storage is unavailable") from exc
+    receipt.storage_bucket = "quarantine"
+    receipt.storage_key = object_key
+    receipt.encryption_version = "AES-256-GCM-v1"
     append_audit(
         session,
         organization_id=principal.organization_id,
         actor_id=principal.user_id,
         entity_type="receipt",
         entity_id=receipt.id,
-        action="receipt.uploaded",
-        metadata={"content_type": content_type, "status": extracted.status},
+        action="receipt.quarantined",
+        metadata={
+            "content_type": content_type,
+            "content_hash": receipt.content_hash,
+            "scan_status": receipt.scan_status,
+        },
         correlation_id=correlation_context.get(),
     )
     session.commit()
-    return {
-        "id": receipt.id,
-        "filename": receipt.filename,
-        "content_type": receipt.content_type,
-        "extraction_status": receipt.extraction_status,
-        "extracted_merchant": receipt.extracted_merchant,
-        "extracted_date": receipt.extracted_date,
-        "extracted_amount_minor": receipt.extracted_amount_minor,
-        "extracted_currency": receipt.extracted_currency,
-        "preview_url": f"/api/v1/receipts/{receipt.id}/content",
-    }
+    try:
+        inspection = inspect_receipt(content, content_type)
+    except MalwareScanError as exc:
+        receipt.scan_status = "SCAN_FAILED"
+        receipt.scan_result = str(exc)
+        receipt.extraction_status = "BLOCKED"
+        receipt.security_flags = ["MALWARE_SCANNER_UNAVAILABLE"]
+        append_audit(
+            session,
+            organization_id=principal.organization_id,
+            actor_id=None,
+            entity_type="receipt",
+            entity_id=receipt.id,
+            action="receipt.scan_failed",
+            metadata={"fail_closed": True},
+            correlation_id=correlation_context.get(),
+        )
+        session.commit()
+        return serialize_receipt(receipt)
+
+    receipt.scan_status = inspection.scan_status
+    receipt.scan_result = inspection.scan_result
+    receipt.security_flags = inspection.security_flags
+    receipt.extraction_status = inspection.extracted.status
+    receipt.extracted_text = inspection.extracted.text
+    receipt.extracted_merchant = inspection.extracted.merchant
+    receipt.extracted_date = inspection.extracted.incurred_date
+    receipt.extracted_amount_minor = inspection.extracted.amount_minor
+    receipt.extracted_currency = inspection.extracted.currency
+    if inspection.scan_status == "CLEAN":
+        try:
+            promote_receipt(object_key, content, content_type)
+        except ReceiptStorageError as exc:
+            receipt.scan_status = "SCAN_FAILED"
+            receipt.scan_result = "Clean receipt could not be promoted to protected storage"
+            receipt.extraction_status = "BLOCKED"
+            receipt.security_flags = [*receipt.security_flags, "STORAGE_PROMOTION_FAILED"]
+            session.commit()
+            raise HTTPException(503, "Receipt storage promotion failed") from exc
+        receipt.storage_bucket = "clean"
+    append_audit(
+        session,
+        organization_id=principal.organization_id,
+        actor_id=None,
+        entity_type="receipt",
+        entity_id=receipt.id,
+        action=(
+            "receipt.security_cleared"
+            if receipt.scan_status == "CLEAN"
+            else "receipt.security_blocked"
+        ),
+        metadata={
+            "scan_status": receipt.scan_status,
+            "security_flags": receipt.security_flags,
+            "content_hash": receipt.content_hash,
+        },
+        correlation_id=correlation_context.get(),
+    )
+    session.commit()
+    return serialize_receipt(receipt)
 
 
 @app.get("/api/v1/receipts/{receipt_id}/content")
@@ -332,8 +420,35 @@ def receipt_content(receipt_id: str, session: SessionDep, principal: PrincipalDe
     receipt = session.scalar(query)
     if receipt is None:
         raise HTTPException(404, "Receipt not found")
+    if receipt.scan_status != "CLEAN":
+        raise HTTPException(423, "Receipt is quarantined or failed security checks")
+    if receipt.storage_key and receipt.storage_bucket:
+        bucket = (
+            settings.receipt_clean_bucket
+            if receipt.storage_bucket == "clean"
+            else settings.receipt_quarantine_bucket
+        )
+        try:
+            content = get_receipt(bucket, receipt.storage_key)
+        except ReceiptStorageError as exc:
+            raise HTTPException(503, "Receipt storage is unavailable") from exc
+    elif receipt.content is not None:
+        content = receipt.content
+    else:
+        raise HTTPException(404, "Receipt content is unavailable")
+    append_audit(
+        session,
+        organization_id=principal.organization_id,
+        actor_id=principal.user_id,
+        entity_type="receipt",
+        entity_id=receipt.id,
+        action="receipt.viewed",
+        metadata={"content_hash": receipt.content_hash},
+        correlation_id=correlation_context.get(),
+    )
+    session.commit()
     return Response(
-        content=receipt.content,
+        content=content,
         media_type=receipt.content_type,
         headers={"Content-Disposition": f'inline; filename="{receipt.id}"'},
     )
@@ -372,6 +487,8 @@ async def submit_expense(
     )
     if receipt is None:
         raise HTTPException(404, "Receipt not found")
+    if receipt.scan_status != "CLEAN":
+        raise DomainConflict("Receipt has not passed malware and document security checks")
     policy = active_policy(session, principal.organization_id)
     fields = body.model_dump(exclude={"receipt_id"})
     expense = Expense(
@@ -387,6 +504,18 @@ async def submit_expense(
     )
     session.add(expense)
     session.flush()
+    session.add(
+        ExpenseReceipt(
+            organization_id=principal.organization_id,
+            expense_id=expense.id,
+            receipt_id=receipt.id,
+            revision=expense.revision,
+            position=1,
+            attachment_type="PRIMARY_RECEIPT",
+            is_current=True,
+            uploaded_by=principal.user_id,
+        )
+    )
     append_audit(
         session,
         organization_id=principal.organization_id,
@@ -461,6 +590,8 @@ def create_decision(
     )
     if expense is None:
         raise HTTPException(404, "Expense not found")
+    if expense.submitter_id == principal.user_id:
+        raise HTTPException(403, "A submitter cannot review their own expense")
     decision = decide(
         session,
         expense=expense,
@@ -513,9 +644,32 @@ async def resubmit(
         )
         if receipt is None:
             raise HTTPException(404, "Receipt not found")
+        if receipt.scan_status != "CLEAN":
+            raise DomainConflict("Replacement receipt has not passed security checks")
+        previous_link = next(
+            (item for item in expense.receipt_versions if item.is_current),
+            None,
+        )
+        for item in expense.receipt_versions:
+            item.is_current = False
+        new_link = ExpenseReceipt(
+            organization_id=principal.organization_id,
+            expense_id=expense.id,
+            receipt_id=receipt.id,
+            revision=expense.revision + 1,
+            position=1,
+            attachment_type="REPLACEMENT_RECEIPT",
+            is_current=True,
+            supersedes_id=previous_link.id if previous_link else None,
+            uploaded_by=principal.user_id,
+        )
+        session.add(new_link)
+        old_receipt_id = expense.receipt_id
         expense.receipt_id = receipt.id
         expense.receipt_present = True
         expense.receipt_hash = receipt.content_hash
+    else:
+        old_receipt_id = expense.receipt_id
     expense.purpose = body.purpose
     expense.revision += 1
     expense.row_version += 1
@@ -529,7 +683,12 @@ async def resubmit(
         entity_type="expense",
         entity_id=expense.id,
         action="expense.resubmitted",
-        metadata={"revision": expense.revision},
+        metadata={
+            "revision": expense.revision,
+            "previous_receipt_id": old_receipt_id,
+            "current_receipt_id": expense.receipt_id,
+            "receipt_changed": old_receipt_id != expense.receipt_id,
+        },
         correlation_id=correlation_context.get(),
     )
     session.add(

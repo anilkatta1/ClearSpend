@@ -12,6 +12,7 @@ export type Expense = {
   receipt_present: boolean;
   receipt_id: string | null;
   receipt: ReceiptUpload | null;
+  receipt_history: Array<{ version_id: string; receipt_id: string; revision: number; attachment_type: string; is_current: boolean; supersedes_id: string | null; content_hash: string; filename: string; scan_status: string; security_flags: string[]; created_at: string }>;
   information_request_message: string | null;
   requested_fields: string[];
   policy_citations: Array<{ id: string; title: string; text: string }>;
@@ -25,6 +26,9 @@ export type ReceiptUpload = {
   filename: string;
   content_type: string;
   extraction_status: string;
+  scan_status: string;
+  scan_result: string | null;
+  security_flags: string[];
   extracted_merchant: string | null;
   extracted_date: string | null;
   extracted_amount_minor: number | null;

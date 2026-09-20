@@ -2,11 +2,14 @@ import io
 import re
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+from typing import Any, cast
 
 from pydantic import BaseModel, ConfigDict
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "application/pdf"}
 MAX_RECEIPT_BYTES = 5 * 1024 * 1024
+MAX_IMAGE_PIXELS = 25_000_000
+MAX_PDF_PAGES = 20
 
 
 class ReceiptError(ValueError):
@@ -23,6 +26,39 @@ class ExtractedReceipt(BaseModel):
     text: str = ""
 
 
+def _contains_prohibited_pdf_entry(
+    value: Any,
+    *,
+    seen: set[int] | None = None,
+    depth: int = 0,
+) -> bool:
+    """Resolve the PDF object graph and fail safely on active-content entries."""
+    if depth > 30:
+        raise ReceiptError("PDF object graph is too deeply nested")
+    try:
+        resolved = value.get_object()
+    except AttributeError:
+        resolved = value
+    seen = seen if seen is not None else set()
+    marker = id(resolved)
+    if marker in seen:
+        return False
+    seen.add(marker)
+    prohibited = {"/OpenAction", "/AA", "/JavaScript", "/JS", "/EmbeddedFiles"}
+    if isinstance(resolved, dict):
+        return any(
+            str(key) in prohibited
+            or _contains_prohibited_pdf_entry(child, seen=seen, depth=depth + 1)
+            for key, child in resolved.items()
+        )
+    if isinstance(resolved, (list, tuple)):
+        return any(
+            _contains_prohibited_pdf_entry(child, seen=seen, depth=depth + 1)
+            for child in resolved
+        )
+    return False
+
+
 def validate_receipt(content: bytes, content_type: str) -> None:
     if content_type not in ALLOWED_TYPES:
         raise ReceiptError("Only JPEG, PNG, and PDF receipts are accepted")
@@ -37,8 +73,47 @@ def validate_receipt(content: bytes, content_type: str) -> None:
         raise ReceiptError("Receipt content does not match its declared type")
 
 
-def receipt_text(content: bytes, content_type: str) -> str:
+def validate_safe_document(content: bytes, content_type: str) -> None:
+    """Deep validation performed only after malware scanning."""
     validate_receipt(content, content_type)
+    if content_type == "application/pdf":
+        from pypdf import PdfReader
+
+        try:
+            reader = PdfReader(io.BytesIO(content), strict=True)
+            if reader.is_encrypted:
+                raise ReceiptError("Encrypted PDF receipts are not accepted")
+            if len(reader.pages) > MAX_PDF_PAGES:
+                raise ReceiptError(f"PDF receipts may contain at most {MAX_PDF_PAGES} pages")
+            root = reader.trailer.get("/Root", {})
+            if _contains_prohibited_pdf_entry(root):
+                raise ReceiptError("PDF contains active or embedded content")
+        except ReceiptError:
+            raise
+        except Exception as exc:
+            raise ReceiptError("PDF structure is invalid") from exc
+        return
+
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(content)) as image:
+            if image.width * image.height > MAX_IMAGE_PIXELS:
+                raise ReceiptError("Receipt image dimensions are too large")
+            expected = "JPEG" if content_type == "image/jpeg" else "PNG"
+            if image.format != expected:
+                raise ReceiptError("Receipt image format does not match its declared type")
+            if getattr(image, "n_frames", 1) != 1:
+                raise ReceiptError("Animated or multi-frame images are not accepted")
+            image.verify()
+    except ReceiptError:
+        raise
+    except Exception as exc:
+        raise ReceiptError("Receipt image structure is invalid") from exc
+
+
+def receipt_text(content: bytes, content_type: str) -> str:
+    validate_safe_document(content, content_type)
     if content_type == "application/pdf":
         from pypdf import PdfReader
 
@@ -49,7 +124,7 @@ def receipt_text(content: bytes, content_type: str) -> str:
     from PIL import Image
 
     with Image.open(io.BytesIO(content)) as image:
-        return pytesseract.image_to_string(image)[:20_000]
+        return cast(str, pytesseract.image_to_string(image))[:20_000]
 
 
 def extract_receipt_fields(text: str) -> ExtractedReceipt:

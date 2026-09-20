@@ -55,8 +55,9 @@ jobs:
       - run: docker compose config --quiet
       - run: docker compose up --build -d
       - run: uv sync --directory services/backend --all-extras --frozen
+      - run: curl --fail --retry 60 --retry-delay 1 --retry-connrefused http://localhost:8000/health/ready
       - run: uv run --directory services/backend python ../../scripts/smoke.py
       - if: always()
-        run: docker compose logs --no-color api worker web
+        run: docker compose logs --no-color api worker web minio clamav
       - if: always()
         run: docker compose down --volumes

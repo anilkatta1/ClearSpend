@@ -14,9 +14,13 @@ The gate checks Ruff, strict mypy, backend tests, ESLint, TypeScript, frontend t
 - Money/currency and deterministic rule boundary behavior
 - Fail-closed aggregation for unknown and technical outcomes
 - Prompt-injection-like semantic input
+- Authenticated encryption round trip, cross-key/object-key denial, and ciphertext tamper rejection
+- Shallow signature validation separated from post-malware deep document parsing
+- Live ClamAV EICAR detection using a synthetic PDF and quarantined-content download denial
+- Receipt replacement creates an immutable second revision and exactly one current association
 - Deterministic prohibition short-circuiting AI
 - Hash-linked audit integrity and tamper detection
+- Concurrent authorized receipt reads preserve the per-tenant audit chain
 - Frontend money formatting contract
 
-Before a customer pilot, add PostgreSQL-backed API integration tests for tenant isolation, concurrent decisions, outbox recovery, worker retry, migration rollback, and backup restore.
-
+The live smoke also covers cross-tenant receipt/expense denial, request-information/resubmission/reassessment, reviewer-only decisions, CSV export, and product metrics. Before a customer-data pilot, add OIDC/session tests, PostgreSQL RLS tests, scanner-outage fault injection, migration rollback, key rotation, and backup/object-store restore exercises.
