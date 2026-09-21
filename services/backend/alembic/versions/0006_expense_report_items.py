@@ -11,11 +11,19 @@ depends_on = None
 
 
 def upgrade() -> None:
+    existing = {
+        column["name"]
+        for column in sa.inspect(op.get_bind()).get_columns("expense_receipts")
+    }
     with op.batch_alter_table("expense_receipts") as batch:
-        batch.add_column(sa.Column("claimed_merchant", sa.String(160)))
-        batch.add_column(sa.Column("claimed_amount_minor", sa.BigInteger()))
-        batch.add_column(sa.Column("claimed_currency", sa.String(3)))
-        batch.add_column(sa.Column("claimed_incurred_date", sa.Date()))
+        if "claimed_merchant" not in existing:
+            batch.add_column(sa.Column("claimed_merchant", sa.String(160)))
+        if "claimed_amount_minor" not in existing:
+            batch.add_column(sa.Column("claimed_amount_minor", sa.BigInteger()))
+        if "claimed_currency" not in existing:
+            batch.add_column(sa.Column("claimed_currency", sa.String(3)))
+        if "claimed_incurred_date" not in existing:
+            batch.add_column(sa.Column("claimed_incurred_date", sa.Date()))
     op.execute(
         sa.text(
             """
