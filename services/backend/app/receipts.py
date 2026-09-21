@@ -44,13 +44,23 @@ def _contains_prohibited_pdf_entry(
     if marker in seen:
         return False
     seen.add(marker)
-    prohibited = {"/OpenAction", "/AA", "/JavaScript", "/JS", "/EmbeddedFiles"}
+    prohibited = {"/AA", "/JavaScript", "/JS", "/EmbeddedFiles"}
     if isinstance(resolved, dict):
-        return any(
-            str(key) in prohibited
-            or _contains_prohibited_pdf_entry(child, seen=seen, depth=depth + 1)
-            for key, child in resolved.items()
-        )
+        for key, child in resolved.items():
+            key_name = str(key)
+            if key_name in prohibited:
+                return True
+            try:
+                child_value = child.get_object()
+            except AttributeError:
+                child_value = child
+            # PDF permits /OpenAction to be a passive page destination array or an
+            # executable action dictionary. Receipt previews need the former only.
+            if key_name == "/OpenAction" and not isinstance(child_value, (list, tuple)):
+                return True
+            if _contains_prohibited_pdf_entry(child, seen=seen, depth=depth + 1):
+                return True
+        return False
     if isinstance(resolved, (list, tuple)):
         return any(
             _contains_prohibited_pdf_entry(child, seen=seen, depth=depth + 1)

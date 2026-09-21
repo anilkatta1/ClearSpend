@@ -16,6 +16,7 @@ The gate checks Ruff, strict mypy, backend tests, ESLint, TypeScript, frontend t
 - Prompt-injection-like semantic input
 - Authenticated encryption round trip, cross-key/object-key denial, and ciphertext tamper rejection
 - Shallow signature validation separated from post-malware deep document parsing
+- Passive PDF initial-page destinations are accepted while JavaScript and action dictionaries remain blocked
 - Live ClamAV EICAR detection using a synthetic PDF and quarantined-content download denial
 - Receipt replacement creates an immutable second revision and exactly one current association
 - Multi-receipt reports enforce unique clean receipt ownership, derive the aggregate server-side, and evaluate merchant/date/amount for every line
@@ -24,4 +25,4 @@ The gate checks Ruff, strict mypy, backend tests, ESLint, TypeScript, frontend t
 - Concurrent authorized receipt reads preserve the per-tenant audit chain
 - Frontend money formatting contract
 
-The live smoke also covers a two-receipt travel report, two per-line matches, aggregate policy assessment, cross-tenant receipt/expense denial, appending only a missed third receipt while preserving the first two, immutable five-link history, request-information/reassessment, reviewer-only decisions, a three-line CSV export, and product metrics. Before a customer-data pilot, add OIDC/session tests, PostgreSQL RLS tests, scanner-outage fault injection, migration rollback, key rotation, and backup/object-store restore exercises.
+The live smoke also covers concurrent initial receipt uploads, a two-receipt travel report, two per-line matches, aggregate policy assessment, cross-tenant receipt/expense denial, appending only a missed third receipt while preserving the first two, immutable five-link history, request-information/reassessment, reviewer-only decisions, a three-line CSV export, and product metrics. Before a customer-data pilot, add OIDC/session tests, PostgreSQL RLS tests, scanner-outage fault injection, migration rollback, key rotation, and backup/object-store restore exercises.

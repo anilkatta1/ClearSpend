@@ -4,6 +4,7 @@ import pytest
 from cryptography.exceptions import InvalidTag
 from PIL import Image
 from pypdf import PdfWriter
+from pypdf.generic import ArrayObject, NameObject, NullObject
 
 from app.receipt_security import MalwareScanError, prompt_injection_flags, scan_for_malware
 from app.receipt_storage import ReceiptStorageError, decrypt_receipt, encrypt_receipt
@@ -25,6 +26,17 @@ def pdf_bytes(*, pages: int = 1, javascript: bool = False, encrypted: bool = Fal
         writer.add_js("app.alert('synthetic test')")
     if encrypted:
         writer.encrypt("synthetic-password")
+    writer.write(output)
+    return output.getvalue()
+
+
+def pdf_with_passive_open_destination() -> bytes:
+    output = io.BytesIO()
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=100, height=100)
+    writer._root_object[NameObject("/OpenAction")] = ArrayObject(
+        [page.indirect_reference, NameObject("/FitH"), NullObject()]
+    )
     writer.write(output)
     return output.getvalue()
 
@@ -57,6 +69,10 @@ def test_signature_and_deep_image_validation_are_separate() -> None:
     validate_receipt(forged, "image/png")
     with pytest.raises(ReceiptError, match="structure is invalid"):
         validate_safe_document(forged, "image/png")
+
+
+def test_passive_pdf_open_destination_is_not_treated_as_executable_content() -> None:
+    validate_safe_document(pdf_with_passive_open_destination(), "application/pdf")
 
 
 def test_prompt_injection_patterns_are_detected_but_normal_receipts_are_not() -> None:

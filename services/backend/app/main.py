@@ -393,6 +393,13 @@ def upload_receipt(
         validate_receipt(content, content_type)
     except ReceiptError as exc:
         raise HTTPException(415, str(exc)) from exc
+    # Audit events are hash-linked per organization. Acquire their serialization
+    # lock before inserting a receipt/FK so concurrent batch uploads use one lock order.
+    session.scalar(
+        select(Organization.id)
+        .where(Organization.id == principal.organization_id)
+        .with_for_update()
+    )
     receipt = Receipt(
         organization_id=principal.organization_id,
         uploader_id=principal.user_id,

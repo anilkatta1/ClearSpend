@@ -68,7 +68,7 @@ export default function Home() {
         return { receipt, file };
       }));
       const uploadedItems = outcomes.flatMap((outcome) => outcome.status === "fulfilled" ? [outcome.value] : []);
-      const failedCount = outcomes.length - uploadedItems.length;
+      const failedFiles = outcomes.flatMap((outcome, index) => outcome.status === "rejected" ? [`${files[index].name}: ${outcome.reason instanceof Error ? outcome.reason.message : "upload failed"}`] : []);
       const blocked = uploadedItems.filter(({ receipt }) => receipt.scan_status !== "CLEAN");
       const clean = uploadedItems.filter(({ receipt }) => receipt.scan_status === "CLEAN").map(({ receipt, file }) => ({
         receipt,
@@ -80,8 +80,8 @@ export default function Home() {
       setReceiptItems((current) => [...current, ...clean]);
       const messages = [];
       if (omittedCount > 0) messages.push(`${omittedCount} file(s) exceeded the 20-receipt limit.`);
-      if (failedCount > 0) messages.push(`${failedCount} receipt upload(s) failed; successful uploads were preserved.`);
-      if (blocked.length > 0) messages.push(`${blocked.length} receipt(s) were blocked by security checks.`);
+      if (failedFiles.length > 0) messages.push(`Upload failed—${failedFiles.join("; ")}. Successful uploads were preserved.`);
+      if (blocked.length > 0) messages.push(`Security blocked—${blocked.map(({ receipt }) => `${receipt.filename}: ${receipt.scan_result ?? receipt.scan_status}`).join("; ")}.`);
       if (messages.length > 0) setError(messages.join(" "));
       event.target.value = "";
     } catch (cause) {

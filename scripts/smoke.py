@@ -3,6 +3,7 @@
 import io
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from uuid import uuid4
 
 import httpx
@@ -58,26 +59,32 @@ def synthetic_receipt(merchant: str, amount: str) -> bytes:
     return receipt_bytes.getvalue()
 
 
+def upload_synthetic_receipt(file_spec: tuple[str, bytes]) -> dict[str, Any]:
+    filename, content = file_spec
+    with httpx.Client(base_url=BASE_URL, timeout=60) as client:
+        response = client.post(
+            "/receipts",
+            headers=headers("employee@acme.test"),
+            files={"file": (filename, content, "image/png")},
+        )
+        response.raise_for_status()
+        return response.json()
+
+
 def main() -> None:
     wait_until_ready()
     with httpx.Client(base_url=BASE_URL, timeout=60) as client:
         hotel_bytes = synthetic_receipt("Synthetic Conference Hotel", "2,250.00")
         transit_bytes = synthetic_receipt("Synthetic City Rail", "750.00")
-        uploaded = []
-        for filename, content in [
+        batch = [
             ("synthetic-hotel.png", hotel_bytes),
             ("synthetic-transit.png", transit_bytes),
-        ]:
-            response = client.post(
-                "/receipts",
-                headers=headers("employee@acme.test"),
-                files={"file": (filename, content, "image/png")},
-            )
-            response.raise_for_status()
-            receipt_data = response.json()
+        ]
+        with ThreadPoolExecutor(max_workers=len(batch)) as executor:
+            uploaded = list(executor.map(upload_synthetic_receipt, batch))
+        for receipt_data in uploaded:
             assert receipt_data["extraction_status"] == "EXTRACTED", receipt_data
             assert receipt_data["scan_status"] == "CLEAN", receipt_data
-            uploaded.append(receipt_data)
         hotel, transit = uploaded
         isolated_receipt = client.get(
             f"/receipts/{hotel['id']}/content",
