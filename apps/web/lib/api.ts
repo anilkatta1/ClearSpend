@@ -12,13 +12,28 @@ export type Expense = {
   receipt_present: boolean;
   receipt_id: string | null;
   receipt: ReceiptUpload | null;
-  receipt_history: Array<{ version_id: string; receipt_id: string; revision: number; attachment_type: string; is_current: boolean; supersedes_id: string | null; content_hash: string; filename: string; scan_status: string; security_flags: string[]; created_at: string }>;
+  receipt_items: ExpenseReceiptItem[];
+  receipt_history: Array<{ version_id: string; receipt_id: string; revision: number; position: number; attachment_type: string; is_current: boolean; supersedes_id: string | null; content_hash: string; filename: string; scan_status: string; security_flags: string[]; merchant: string | null; amount_minor: number | null; currency: string | null; claimed_amount_minor: number | null; claimed_currency: string | null; incurred_date: string | null; created_at: string }>;
   information_request_message: string | null;
   requested_fields: string[];
   policy_citations: Array<{ id: string; title: string; text: string }>;
   export: { id: string; status: string; account_code: string; cost_center: string; error_code: string | null; error_detail: string | null } | null;
   recommendation: string | null;
   checks: Array<{ check_key: string; status: string; reason_code: string; explanation: string; source: string; policy_section_ids: string[] }>;
+};
+
+export type ExpenseReceiptItem = {
+  version_id: string;
+  receipt_id: string;
+  position: number;
+  merchant: string;
+  amount_minor: number;
+  currency: string;
+  incurred_date: string;
+  filename: string;
+  content_type: string;
+  scan_status: string;
+  security_flags: string[];
 };
 
 export type ReceiptUpload = {

@@ -42,50 +42,66 @@ def view_receipt_for_audit_race(receipt_id: str) -> None:
         response.raise_for_status()
 
 
+def synthetic_receipt(merchant: str, amount: str) -> bytes:
+    image = Image.new("RGB", (1100, 500), "white")
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default(size=36)
+    draw.multiline_text(
+        (40, 40),
+        f"{merchant}\nBusiness travel receipt\nDate: 15/09/2026\nGrand Total INR {amount}",
+        fill="black",
+        spacing=25,
+        font=font,
+    )
+    receipt_bytes = io.BytesIO()
+    image.save(receipt_bytes, format="PNG")
+    return receipt_bytes.getvalue()
+
+
 def main() -> None:
     wait_until_ready()
     with httpx.Client(base_url=BASE_URL, timeout=60) as client:
-        image = Image.new("RGB", (1100, 500), "white")
-        draw = ImageDraw.Draw(image)
-        font = ImageFont.load_default(size=36)
-        draw.multiline_text(
-            (40, 40),
-            "Synthetic Conference Hotel\nInvoice\nDate: 15/09/2026\nGrand Total INR 2,250.00",
-            fill="black",
-            spacing=25,
-            font=font,
-        )
-        receipt_bytes = io.BytesIO()
-        image.save(receipt_bytes, format="PNG")
-        receipt = client.post(
-            "/receipts",
-            headers=headers("employee@acme.test"),
-            files={
-                "file": ("synthetic-receipt.png", receipt_bytes.getvalue(), "image/png")
-            },
-        )
-        receipt.raise_for_status()
-        receipt_data = receipt.json()
-        assert receipt_data["extraction_status"] == "EXTRACTED", receipt_data
-        assert receipt_data["scan_status"] == "CLEAN", receipt_data
+        hotel_bytes = synthetic_receipt("Synthetic Conference Hotel", "2,250.00")
+        transit_bytes = synthetic_receipt("Synthetic City Rail", "750.00")
+        uploaded = []
+        for filename, content in [
+            ("synthetic-hotel.png", hotel_bytes),
+            ("synthetic-transit.png", transit_bytes),
+        ]:
+            response = client.post(
+                "/receipts",
+                headers=headers("employee@acme.test"),
+                files={"file": (filename, content, "image/png")},
+            )
+            response.raise_for_status()
+            receipt_data = response.json()
+            assert receipt_data["extraction_status"] == "EXTRACTED", receipt_data
+            assert receipt_data["scan_status"] == "CLEAN", receipt_data
+            uploaded.append(receipt_data)
+        hotel, transit = uploaded
         isolated_receipt = client.get(
-            f"/receipts/{receipt_data['id']}/content",
+            f"/receipts/{hotel['id']}/content",
             headers=headers("employee@globex.test"),
         )
         assert isolated_receipt.status_code == 404, isolated_receipt.text
 
         submission_key = str(uuid4())
         payload = {
-            "merchant": receipt_data["extracted_merchant"],
-            "amount_minor": receipt_data["extracted_amount_minor"],
-            "currency": "INR",
-            "incurred_date": receipt_data["extracted_date"],
             "category": "travel",
-            "purpose": "Customer architecture workshop",
-            "receipt_id": receipt_data["id"],
+            "purpose": "Customer architecture workshop trip",
+            "items": [
+                {
+                    "receipt_id": item["id"],
+                    "merchant": item["extracted_merchant"],
+                    "amount_minor": item["extracted_amount_minor"],
+                    "currency": "INR",
+                    "incurred_date": item["extracted_date"],
+                }
+                for item in uploaded
+            ],
         }
         response = client.post(
-            "/expenses",
+            "/expense-reports",
             headers={
                 **headers("employee@acme.test"),
                 "Idempotency-Key": submission_key,
@@ -95,12 +111,12 @@ def main() -> None:
         response.raise_for_status()
         expense = response.json()
         changed_replay = client.post(
-            "/expenses",
+            "/expense-reports",
             headers={
                 **headers("employee@acme.test"),
                 "Idempotency-Key": submission_key,
             },
-            json={**payload, "amount_minor": 999_00},
+            json={**payload, "purpose": "Changed replay must fail"},
         )
         assert changed_replay.status_code == 409, changed_replay.text
 
@@ -119,15 +135,22 @@ def main() -> None:
             expense = expense_response.json()
         assert expense["state"] == "AWAITING_REVIEW", expense
         assert expense["recommendation"] == "APPROVE_RECOMMENDED", expense
-        assert len(expense["receipt_history"]) == 1, expense
-        assert expense["receipt_history"][0]["is_current"] is True, expense
+        assert expense["amount_minor"] == 300_000, expense
+        assert len(expense["receipt_items"]) == 2, expense
+        assert len(expense["receipt_history"]) == 2, expense
+        assert all(item["is_current"] for item in expense["receipt_history"]), expense
+        receipt_checks = [
+            check for check in expense["checks"] if check["check_key"].startswith("receipt_match:")
+        ]
+        assert len(receipt_checks) == 2, expense
+        assert all(check["status"] == "PASS" for check in receipt_checks), expense
 
         information_request = client.post(
             f"/expenses/{expense['id']}/decisions",
             headers=headers("reviewer@acme.test", idempotent=True),
             json={
                 "action": "REQUEST_INFORMATION",
-                "reason": "Please attach the itemized receipt.",
+                "reason": "Please add the missed airport transfer receipt.",
                 "expected_row_version": expense["row_version"],
                 "requested_fields": ["receipt"],
             },
@@ -136,29 +159,39 @@ def main() -> None:
         expense = information_request.json()["expense"]
         assert expense["state"] == "INFORMATION_REQUESTED", expense
 
-        replacement = client.post(
+        additional_bytes = synthetic_receipt("Synthetic Airport Taxi", "250.00")
+        additional = client.post(
             "/receipts",
             headers=headers("employee@acme.test"),
             files={
                 "file": (
-                    "synthetic-itemized-receipt.png",
-                    receipt_bytes.getvalue(),
+                    "synthetic-airport-taxi.png",
+                    additional_bytes,
                     "image/png",
                 )
             },
         )
-        replacement.raise_for_status()
-        replacement_data = replacement.json()
-        assert replacement_data["scan_status"] == "CLEAN", replacement_data
+        additional.raise_for_status()
+        additional_data = additional.json()
+        assert additional_data["scan_status"] == "CLEAN", additional_data
         resubmission = client.post(
             f"/expenses/{expense['id']}/resubmissions",
             headers=headers("employee@acme.test"),
             json={
-                "purpose": "Customer architecture workshop (itemized receipt added)",
-                "receipt_id": replacement_data["id"],
+                "purpose": "Customer architecture workshop (airport transfer added)",
+                "items": [
+                    {
+                        "receipt_id": additional_data["id"],
+                        "merchant": additional_data["extracted_merchant"]
+                        or "Synthetic Airport Taxi",
+                        "amount_minor": additional_data["extracted_amount_minor"],
+                        "currency": "INR",
+                        "incurred_date": additional_data["extracted_date"],
+                    },
+                ],
             },
         )
-        resubmission.raise_for_status()
+        assert resubmission.is_success, resubmission.text
         expense = resubmission.json()
         deadline = time.monotonic() + 45
         while expense["state"] != "AWAITING_REVIEW" and time.monotonic() < deadline:
@@ -170,9 +203,14 @@ def main() -> None:
             expense = expense_response.json()
         assert expense["state"] == "AWAITING_REVIEW", expense
         assert expense["revision"] == 2, expense
-        assert len(expense["receipt_history"]) == 2, expense
-        assert sum(item["is_current"] for item in expense["receipt_history"]) == 1, expense
-        assert expense["receipt_history"][-1]["receipt_id"] == replacement_data["id"]
+        assert expense["amount_minor"] == 325_000, expense
+        assert len(expense["receipt_history"]) == 5, expense
+        assert sum(item["is_current"] for item in expense["receipt_history"]) == 3, expense
+        assert [item["receipt_id"] for item in expense["receipt_items"]] == [
+            hotel["id"],
+            transit["id"],
+            additional_data["id"],
+        ]
 
         eicar = (
             b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
@@ -239,11 +277,15 @@ def main() -> None:
         )
         csv_file.raise_for_status()
         assert expense["id"] in csv_file.text
+        assert hotel["id"] in csv_file.text
+        assert transit["id"] in csv_file.text
+        assert additional_data["id"] in csv_file.text
+        assert len(csv_file.text.strip().splitlines()) == 4, csv_file.text
 
         with ThreadPoolExecutor(max_workers=3) as executor:
             list(
                 executor.map(
-                    view_receipt_for_audit_race, [replacement_data["id"]] * 3
+                    view_receipt_for_audit_race, [additional_data["id"]] * 3
                 )
             )
 
@@ -254,8 +296,8 @@ def main() -> None:
         metrics.raise_for_status()
         assert metrics.json()["exports_completed"] >= 1
         print(
-            f"smoke passed: expense={expense['id']} receipts=versioned malware=blocked "
-            "export=csv audit=valid"
+            f"smoke passed: expense={expense['id']} report=3-lines append=preserved "
+            "malware=blocked export=3-line-csv audit=valid"
         )
 
 

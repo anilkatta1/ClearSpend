@@ -2,6 +2,7 @@ import hashlib
 import json
 import statistics
 from contextvars import ContextVar
+from datetime import date
 from typing import Annotated, Any, cast
 from uuid import uuid4
 
@@ -41,7 +42,15 @@ from app.receipt_storage import (
     put_quarantined_receipt,
 )
 from app.receipts import MAX_RECEIPT_BYTES, ReceiptError, validate_receipt
-from app.schemas import DecisionIn, ExpenseIn, ExportIn, PolicyDraftIn, ResubmissionIn
+from app.schemas import (
+    DecisionIn,
+    ExpenseIn,
+    ExpenseItemIn,
+    ExpenseReportIn,
+    ExportIn,
+    PolicyDraftIn,
+    ResubmissionIn,
+)
 from app.security import Principal, PrincipalDep, require_roles
 from app.services import DomainConflict, active_policy, decide, export_expense, serialize_expense
 
@@ -71,6 +80,81 @@ def serialize_receipt(receipt: Receipt) -> dict[str, Any]:
         "extracted_currency": receipt.extracted_currency,
         "preview_url": f"/api/v1/receipts/{receipt.id}/content",
     }
+
+
+def load_report_receipts(
+    session: Session,
+    principal: Principal,
+    items: list[ExpenseItemIn],
+) -> list[tuple[ExpenseItemIn, Receipt]]:
+    receipt_ids = [item.receipt_id for item in items]
+    receipts = session.scalars(
+        select(Receipt).where(
+            Receipt.id.in_(receipt_ids),
+            Receipt.organization_id == principal.organization_id,
+            Receipt.uploader_id == principal.user_id,
+        )
+    ).all()
+    by_id = {receipt.id: receipt for receipt in receipts}
+    if len(by_id) != len(receipt_ids):
+        raise HTTPException(404, "One or more receipts were not found")
+    ordered = [(item, by_id[item.receipt_id]) for item in items]
+    if any(receipt.scan_status != "CLEAN" for _, receipt in ordered):
+        raise DomainConflict("Every receipt must pass security checks before submission")
+    return ordered
+
+
+def report_header(
+    items: list[tuple[ExpenseItemIn, Receipt]],
+) -> tuple[str, int, str, date, str]:
+    amount_minor = sum(item.amount_minor for item, _ in items)
+    incurred_date = min(item.incurred_date for item, _ in items)
+    merchant = (
+        items[0][0].merchant if len(items) == 1 else f"Expense report · {len(items)} receipts"
+    )
+    bundle_hash = hashlib.sha256(
+        "|".join(receipt.content_hash for _, receipt in items).encode()
+    ).hexdigest()
+    return merchant, amount_minor, "INR", incurred_date, bundle_hash
+
+
+def add_report_links(
+    session: Session,
+    *,
+    expense: Expense,
+    organization_id: str,
+    uploaded_by: str,
+    revision: int,
+    items: list[tuple[ExpenseItemIn, Receipt]],
+    previous_by_position: dict[int, ExpenseReceipt] | None = None,
+) -> None:
+    for position, (item, receipt) in enumerate(items, 1):
+        previous = (previous_by_position or {}).get(position)
+        attachment_type = "PRIMARY_RECEIPT"
+        if revision > 1:
+            if previous and previous.receipt_id == receipt.id:
+                attachment_type = "CARRIED_FORWARD"
+            elif previous:
+                attachment_type = "REPLACEMENT_RECEIPT"
+            else:
+                attachment_type = "ADDITIONAL_RECEIPT"
+        session.add(
+            ExpenseReceipt(
+                organization_id=organization_id,
+                expense_id=expense.id,
+                receipt_id=receipt.id,
+                revision=revision,
+                position=position,
+                attachment_type=attachment_type,
+                is_current=True,
+                supersedes_id=previous.id if previous else None,
+                uploaded_by=uploaded_by,
+                claimed_merchant=item.merchant,
+                claimed_amount_minor=item.amount_minor,
+                claimed_currency=item.currency,
+                claimed_incurred_date=item.incurred_date,
+            )
+        )
 
 
 def problem(
@@ -514,6 +598,10 @@ async def submit_expense(
             attachment_type="PRIMARY_RECEIPT",
             is_current=True,
             uploaded_by=principal.user_id,
+            claimed_merchant=body.merchant,
+            claimed_amount_minor=body.amount_minor,
+            claimed_currency=body.currency,
+            claimed_incurred_date=body.incurred_date,
         )
     )
     append_audit(
@@ -527,6 +615,96 @@ async def submit_expense(
             "policy_version": policy.version,
             "amount_minor": expense.amount_minor,
             "currency": expense.currency,
+        },
+        correlation_id=correlation_context.get(),
+    )
+    session.add(
+        OutboxEvent(
+            organization_id=principal.organization_id,
+            aggregate_id=expense.id,
+            event_type="assessment.requested",
+            payload={
+                "expense_id": expense.id,
+                "revision": expense.revision,
+                "correlation_id": correlation_context.get(),
+            },
+        )
+    )
+    session.commit()
+    try:
+        await enqueue_assessment(expense.id, correlation_context.get())
+    except Exception as exc:
+        logger.warning("assessment.enqueue_failed", expense_id=expense.id, error=type(exc).__name__)
+    return serialize_expense(expense)
+
+
+@app.post("/api/v1/expense-reports", status_code=202)
+async def submit_expense_report(
+    body: ExpenseReportIn,
+    session: SessionDep,
+    principal: Annotated[Principal, Depends(require_roles(Role.EMPLOYEE, Role.ADMIN))],
+    idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=8, max_length=128)],
+) -> dict[str, Any]:
+    body_hash = request_hash(body.model_dump(mode="json"))
+    session.scalar(
+        select(Organization.id)
+        .where(Organization.id == principal.organization_id)
+        .with_for_update()
+    )
+    existing = session.scalar(
+        select(Expense).where(
+            Expense.organization_id == principal.organization_id,
+            Expense.submitter_id == principal.user_id,
+            Expense.idempotency_key == idempotency_key,
+        )
+    )
+    if existing:
+        if existing.request_hash != body_hash:
+            raise DomainConflict("Idempotency key was already used for a different submission")
+        return serialize_expense(existing)
+    report_items = load_report_receipts(session, principal, body.items)
+    merchant, amount_minor, currency, incurred_date, bundle_hash = report_header(report_items)
+    policy = active_policy(session, principal.organization_id)
+    first_receipt = report_items[0][1]
+    expense = Expense(
+        organization_id=principal.organization_id,
+        submitter_id=principal.user_id,
+        policy_version_id=policy.id,
+        idempotency_key=idempotency_key,
+        request_hash=body_hash,
+        merchant=merchant,
+        amount_minor=amount_minor,
+        currency=currency,
+        incurred_date=incurred_date,
+        category=body.category,
+        purpose=body.purpose,
+        receipt_id=first_receipt.id,
+        receipt_present=True,
+        receipt_hash=bundle_hash,
+    )
+    session.add(expense)
+    session.flush()
+    add_report_links(
+        session,
+        expense=expense,
+        organization_id=principal.organization_id,
+        uploaded_by=principal.user_id,
+        revision=expense.revision,
+        items=report_items,
+    )
+    append_audit(
+        session,
+        organization_id=principal.organization_id,
+        actor_id=principal.user_id,
+        entity_type="expense",
+        entity_id=expense.id,
+        action="expense.report_submitted",
+        metadata={
+            "policy_version": policy.version,
+            "amount_minor": amount_minor,
+            "currency": currency,
+            "receipt_count": len(report_items),
+            "category": body.category,
         },
         correlation_id=correlation_context.get(),
     )
@@ -634,7 +812,66 @@ async def resubmit(
     if expense.state != ExpenseState.INFORMATION_REQUESTED:
         raise DomainConflict("Expense is not awaiting additional information")
     ensure_transition(ExpenseState(expense.state), ExpenseState.SUBMITTED)
-    if body.receipt_id:
+    current_before = sorted(
+        (item for item in expense.receipt_versions if item.is_current),
+        key=lambda item: item.position,
+    )
+    previous_receipt_ids = [item.receipt_id for item in current_before]
+    if body.items:
+        submitted_items = load_report_receipts(session, principal, body.items)
+        report_items = submitted_items
+        if body.items_mode == "APPEND":
+            carried_items = [
+                (
+                    ExpenseItemIn(
+                        receipt_id=item.receipt_id,
+                        merchant=item.claimed_merchant
+                        or item.receipt.extracted_merchant
+                        or "Unknown",
+                        amount_minor=(
+                            item.claimed_amount_minor
+                            or item.receipt.extracted_amount_minor
+                            or expense.amount_minor
+                        ),
+                        currency="INR",
+                        incurred_date=(
+                            item.claimed_incurred_date
+                            or item.receipt.extracted_date
+                            or expense.incurred_date
+                        ),
+                    ),
+                    item.receipt,
+                )
+                for item in current_before
+            ]
+            report_items = [*carried_items, *submitted_items]
+            if len(report_items) > 20:
+                raise DomainConflict("An expense report may contain at most 20 receipts")
+            receipt_ids = [receipt.id for _, receipt in report_items]
+            if len(receipt_ids) != len(set(receipt_ids)):
+                raise DomainConflict("A receipt may appear only once in the current report")
+        for item in current_before:
+            item.is_current = False
+        next_revision = expense.revision + 1
+        add_report_links(
+            session,
+            expense=expense,
+            organization_id=principal.organization_id,
+            uploaded_by=principal.user_id,
+            revision=next_revision,
+            items=report_items,
+            previous_by_position={item.position: item for item in current_before},
+        )
+        merchant, amount_minor, currency, incurred_date, bundle_hash = report_header(report_items)
+        expense.merchant = merchant
+        expense.amount_minor = amount_minor
+        expense.currency = currency
+        expense.incurred_date = incurred_date
+        expense.receipt_id = report_items[0][1].id
+        expense.receipt_present = True
+        expense.receipt_hash = bundle_hash
+        current_receipt_ids = [receipt.id for _, receipt in report_items]
+    elif body.receipt_id:
         receipt = session.scalar(
             select(Receipt).where(
                 Receipt.id == body.receipt_id,
@@ -664,12 +901,20 @@ async def resubmit(
             uploaded_by=principal.user_id,
         )
         session.add(new_link)
-        old_receipt_id = expense.receipt_id
         expense.receipt_id = receipt.id
         expense.receipt_present = True
         expense.receipt_hash = receipt.content_hash
+        new_link.claimed_merchant = receipt.extracted_merchant or expense.merchant
+        new_link.claimed_amount_minor = receipt.extracted_amount_minor or expense.amount_minor
+        new_link.claimed_currency = receipt.extracted_currency or expense.currency
+        new_link.claimed_incurred_date = receipt.extracted_date or expense.incurred_date
+        expense.merchant = new_link.claimed_merchant
+        expense.amount_minor = new_link.claimed_amount_minor
+        expense.currency = new_link.claimed_currency
+        expense.incurred_date = new_link.claimed_incurred_date
+        current_receipt_ids = [receipt.id]
     else:
-        old_receipt_id = expense.receipt_id
+        current_receipt_ids = previous_receipt_ids
     expense.purpose = body.purpose
     expense.revision += 1
     expense.row_version += 1
@@ -685,9 +930,10 @@ async def resubmit(
         action="expense.resubmitted",
         metadata={
             "revision": expense.revision,
-            "previous_receipt_id": old_receipt_id,
-            "current_receipt_id": expense.receipt_id,
-            "receipt_changed": old_receipt_id != expense.receipt_id,
+            "previous_receipt_ids": previous_receipt_ids,
+            "current_receipt_ids": current_receipt_ids,
+            "receipt_changed": previous_receipt_ids != current_receipt_ids,
+            "receipt_count": len(current_receipt_ids),
         },
         correlation_id=correlation_context.get(),
     )

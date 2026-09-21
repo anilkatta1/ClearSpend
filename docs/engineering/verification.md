@@ -18,9 +18,10 @@ The gate checks Ruff, strict mypy, backend tests, ESLint, TypeScript, frontend t
 - Shallow signature validation separated from post-malware deep document parsing
 - Live ClamAV EICAR detection using a synthetic PDF and quarantined-content download denial
 - Receipt replacement creates an immutable second revision and exactly one current association
+- Multi-receipt reports enforce unique clean receipt ownership, derive the aggregate server-side, and evaluate merchant/date/amount for every line
 - Deterministic prohibition short-circuiting AI
 - Hash-linked audit integrity and tamper detection
 - Concurrent authorized receipt reads preserve the per-tenant audit chain
 - Frontend money formatting contract
 
-The live smoke also covers cross-tenant receipt/expense denial, request-information/resubmission/reassessment, reviewer-only decisions, CSV export, and product metrics. Before a customer-data pilot, add OIDC/session tests, PostgreSQL RLS tests, scanner-outage fault injection, migration rollback, key rotation, and backup/object-store restore exercises.
+The live smoke also covers a two-receipt travel report, two per-line matches, aggregate policy assessment, cross-tenant receipt/expense denial, appending only a missed third receipt while preserving the first two, immutable five-link history, request-information/reassessment, reviewer-only decisions, a three-line CSV export, and product metrics. Before a customer-data pilot, add OIDC/session tests, PostgreSQL RLS tests, scanner-outage fault injection, migration rollback, key rotation, and backup/object-store restore exercises.

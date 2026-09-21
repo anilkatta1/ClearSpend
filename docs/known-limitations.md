@@ -12,3 +12,4 @@
 - Automated retention/deletion and short-lived signed object-store access are not implemented. The API decrypts authorized clean objects server-side; quarantined/failed objects are never downloadable.
 - CSV `EXPORTED` means an accountant-ready file was generated, not that an ERP accepted it or a reimbursement was paid.
 - Expense and audit list endpoints are not yet cursor-paginated and must be bounded before sustained pilot volume.
+- One report is intentionally limited to 20 receipts, one currency (INR), one shared category, and one atomic reviewer decision. Mixed-category trips should be split into separate reports until line-level category routing and split decisions are validated with users.

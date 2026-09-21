@@ -7,7 +7,8 @@ Date: 2026-09-15
 | Assessment request | Implementation evidence | Release status |
 |---|---|---|
 | Receipt-first workflow | Authenticated 5 MB JPEG/PNG/PDF upload; encrypted quarantine; fail-closed ClamAV scan before parsing; deep structure/resource/active-content checks; private decrypted preview; Tesseract/pypdf extraction; editable employee confirmation | Implemented for synthetic MVP |
-| Receipt evidence revisions | Immutable expense-to-receipt revision links, supersession pointer, one current association, actor/time/hash metadata, auditor-visible history, and assessment input pinning | Implemented |
+| Receipt evidence revisions | Immutable expense-to-receipt revision links, supersession pointers, one current association per report line, actor/time/hash metadata, auditor-visible history, and assessment input pinning | Implemented |
+| Multi-receipt expense reports | Up to 20 same-category receipts in one approval boundary; per-line confirmation and matching; server-derived aggregate; append-missing or replace-bundle resubmission; line-level accounting export | Implemented |
 | Untrusted-document guardrails | OCR prompt-injection patterns route to `UNKNOWN`/human review and prevent model invocation; AI remains tool-less and cannot approve, export, or reveal other tenants | Implemented; heuristic control |
 | Deterministic receipt matching | Amount, INR currency, normalized merchant, and incurred-date comparison; mismatch/unreadable becomes `UNKNOWN` and `NEEDS_REVIEW` | Implemented |
 | Reviewer explainability | Recommendation explicitly labelled non-decision; source, reason code, explanation, and pinned policy citation text shown | Implemented |
@@ -18,7 +19,7 @@ Date: 2026-09-15
 | Idempotency authorization | Replays verify actor and canonical request hash; changed requests return 409 | Implemented |
 | Reproducible dates | Immutable `submitted_at` drives submission-window evaluation across retries/revisions | Implemented |
 | Concurrent audit allocation | Organization row is locked before sequence allocation | Implemented |
-| Risk-path verification | Unit/property checks, PostgreSQL export-failure/retry and unpublished-outbox recovery tests, plus automated live clean scan → assessment → information request → replacement revision → reassessment → EICAR quarantine → cross-tenant denial → decision → CSV → concurrent audit smoke | Implemented |
+| Risk-path verification | Unit/property checks, PostgreSQL export-failure/retry and unpublished-outbox recovery tests, plus automated live two-receipt scan → aggregate/per-line assessment → information request → append only a missed third receipt → immutable bundle revision → reassessment → EICAR quarantine → cross-tenant denial → decision → three-line CSV → concurrent audit smoke | Implemented |
 
 ## Explicitly deferred
 

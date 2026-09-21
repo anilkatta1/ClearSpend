@@ -63,6 +63,10 @@ def serialize_expense(expense: Expense) -> dict[str, Any]:
         for check in (latest.checks if latest else [])
         for section_id in check.get("policy_section_ids", [])
     }
+    current_items = sorted(
+        (item for item in expense.receipt_versions if item.is_current),
+        key=lambda item: item.position,
+    )
     return {
         "id": expense.id,
         "merchant": expense.merchant,
@@ -92,6 +96,22 @@ def serialize_expense(expense: Expense) -> dict[str, Any]:
             if expense.receipt
             else None
         ),
+        "receipt_items": [
+            {
+                "version_id": item.id,
+                "receipt_id": item.receipt_id,
+                "position": item.position,
+                "merchant": item.claimed_merchant,
+                "amount_minor": item.claimed_amount_minor,
+                "currency": item.claimed_currency,
+                "incurred_date": item.claimed_incurred_date,
+                "filename": item.receipt.filename,
+                "content_type": item.receipt.content_type,
+                "scan_status": item.receipt.scan_status,
+                "security_flags": item.receipt.security_flags,
+            }
+            for item in current_items
+        ],
         "receipt_history": [
             {
                 "version_id": item.id,
@@ -104,6 +124,13 @@ def serialize_expense(expense: Expense) -> dict[str, Any]:
                 "filename": item.receipt.filename,
                 "scan_status": item.receipt.scan_status,
                 "security_flags": item.receipt.security_flags,
+                "position": item.position,
+                "merchant": item.claimed_merchant,
+                "amount_minor": item.claimed_amount_minor,
+                "currency": item.claimed_currency,
+                "claimed_amount_minor": item.claimed_amount_minor,
+                "claimed_currency": item.claimed_currency,
+                "incurred_date": item.claimed_incurred_date,
                 "created_at": item.created_at,
             }
             for item in sorted(
@@ -172,35 +199,71 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
         ),
         [(row[0], row[1], row[2]) for row in policy_rules],
     )
-    receipt = expense.receipt
     receipt_section_id = next(
         (str(row[2]) for row in policy_rules if row[0] == "receipt_required"),
         expense.policy_version.sections[0].id,
     )
-    receipt_check = evaluate_receipt_match(
-        ClaimFacts(
-            amount_minor=expense.amount_minor,
-            currency=expense.currency,
-            category=expense.category,
-            merchant=expense.merchant,
-            purpose=expense.purpose,
-            incurred_date=expense.incurred_date,
-            submitted_date=expense.submitted_at.date(),
-            receipt_present=expense.receipt_present,
-            receipt_hash=expense.receipt_hash,
-        ),
-        extracted_amount_minor=receipt.extracted_amount_minor if receipt else None,
-        extracted_currency=receipt.extracted_currency if receipt else None,
-        extracted_merchant=receipt.extracted_merchant if receipt else None,
-        extracted_date=receipt.extracted_date if receipt else None,
-        extraction_status=receipt.extraction_status if receipt else "NO_RECEIPT",
-        section_id=receipt_section_id,
+    current_receipt_versions = sorted(
+        (item for item in expense.receipt_versions if item.is_current),
+        key=lambda item: item.position,
     )
-    state["checks"] = [*state["checks"], receipt_check]
-    if receipt_check.status == "UNKNOWN" and state.get("recommendation") == Recommendation.APPROVE:
+    receipt_checks: list[PolicyCheck] = []
+    for item in current_receipt_versions:
+        receipt = item.receipt
+        item_facts = ClaimFacts(
+            amount_minor=item.claimed_amount_minor or expense.amount_minor,
+            currency=item.claimed_currency or expense.currency,
+            category=expense.category,
+            merchant=item.claimed_merchant or expense.merchant,
+            purpose=expense.purpose,
+            incurred_date=item.claimed_incurred_date or expense.incurred_date,
+            submitted_date=expense.submitted_at.date(),
+            receipt_present=True,
+            receipt_hash=receipt.content_hash,
+        )
+        base_receipt_check = evaluate_receipt_match(
+            item_facts,
+            extracted_amount_minor=receipt.extracted_amount_minor,
+            extracted_currency=receipt.extracted_currency,
+            extracted_merchant=receipt.extracted_merchant,
+            extracted_date=receipt.extracted_date,
+            extraction_status=receipt.extraction_status,
+            section_id=receipt_section_id,
+        )
+        receipt_check = base_receipt_check.model_copy(
+            update={
+                "check_key": f"receipt_match:{item.position}",
+                "explanation": (
+                    f"Line {item.position} ({receipt.filename}): "
+                    f"{base_receipt_check.reason_code.replace('_', ' ').lower()}"
+                ),
+                "evidence_refs": [receipt.content_hash],
+            }
+        )
+        receipt_checks.append(receipt_check)
+    if not receipt_checks:
+        receipt_checks.append(
+            PolicyCheck(
+                check_key="receipt_match:missing",
+                source="DETERMINISTIC",
+                status=CheckStatus.UNKNOWN,
+                reason_code="NO_CURRENT_RECEIPT_ITEMS",
+                explanation="The report has no current receipt line items.",
+                policy_section_ids=[receipt_section_id],
+            )
+        )
+    state["checks"] = [*state["checks"], *receipt_checks]
+    if (
+        any(check.status == CheckStatus.UNKNOWN for check in receipt_checks)
+        and state.get("recommendation") == Recommendation.APPROVE
+    ):
         state["recommendation"] = Recommendation.REVIEW
-    receipt_security_flags = receipt.security_flags if receipt else []
-    if any(flag.startswith("PROMPT_INJECTION_PATTERN_") for flag in receipt_security_flags):
+    flagged_receipts = [
+        item.receipt
+        for item in current_receipt_versions
+        if any(flag.startswith("PROMPT_INJECTION_PATTERN_") for flag in item.receipt.security_flags)
+    ]
+    if flagged_receipts:
         state["checks"] = [
             *state["checks"],
             PolicyCheck(
@@ -213,11 +276,10 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
                     "as evidence only and requires human review."
                 ),
                 policy_section_ids=[receipt_section_id],
-                evidence_refs=[receipt.content_hash] if receipt else [],
+                evidence_refs=[receipt.content_hash for receipt in flagged_receipts],
             ),
         ]
         state["recommendation"] = Recommendation.REVIEW
-    current_receipt_versions = [item for item in expense.receipt_versions if item.is_current]
     attempt = AssessmentAttempt(
         organization_id=expense.organization_id,
         expense_id=expense.id,
@@ -335,25 +397,52 @@ def render_accounting_csv(*, expense: Expense, account_code: str, cost_center: s
     writer.writerow(
         [
             "expense_id",
+            "line_number",
+            "receipt_id",
             "merchant",
             "date",
             "amount_minor",
             "currency",
+            "category",
             "account_code",
             "cost_center",
         ]
     )
-    writer.writerow(
-        [
-            expense.id,
-            expense.merchant,
-            expense.incurred_date.isoformat(),
-            expense.amount_minor,
-            expense.currency,
-            account_code,
-            cost_center,
-        ]
+    items = sorted(
+        (item for item in expense.receipt_versions if item.is_current),
+        key=lambda item: item.position,
     )
+    if items:
+        for item in items:
+            writer.writerow(
+                [
+                    expense.id,
+                    item.position,
+                    item.receipt_id,
+                    item.claimed_merchant or expense.merchant,
+                    (item.claimed_incurred_date or expense.incurred_date).isoformat(),
+                    item.claimed_amount_minor or expense.amount_minor,
+                    item.claimed_currency or expense.currency,
+                    expense.category,
+                    account_code,
+                    cost_center,
+                ]
+            )
+    else:
+        writer.writerow(
+            [
+                expense.id,
+                1,
+                expense.receipt_id or "",
+                expense.merchant,
+                expense.incurred_date.isoformat(),
+                expense.amount_minor,
+                expense.currency,
+                expense.category,
+                account_code,
+                cost_center,
+            ]
+        )
     return output.getvalue()
 
 

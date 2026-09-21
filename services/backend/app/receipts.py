@@ -143,7 +143,7 @@ def extract_receipt_fields(text: str) -> ExtractedReceipt:
         (
             line[:160]
             for line in lines
-            if not re.search(r"(?i)invoice|receipt|tax|gst|date|total|amount", line)
+            if not re.search(r"(?i)\b(?:invoice|receipt|tax|gst|date|total|amount)\b", line)
         ),
         None,
     )

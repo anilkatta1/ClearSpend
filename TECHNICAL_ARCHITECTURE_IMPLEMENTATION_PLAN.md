@@ -408,9 +408,9 @@ Enforce the transition matrix in domain code and with database constraints/optim
 | `policy_versions` | org, integer version, status, content hash, publisher, time; unique org/version. |
 | `policy_sections` | policy version, stable key, title, source text, sequence; unique version/key. |
 | `policy_rules` | section, type enum, typed JSON params, priority; schema validated before insert/publication. |
-| `expenses` | org, submitter, policy version, merchant, amount minor, currency, incurred date, category, purpose, state, row version. |
+| `expenses` | Report header: org, submitter, policy version, server-derived merchant label/total/currency/oldest incurred date/bundle hash, shared category and purpose, state, row version. One row is one approval boundary. |
 | `receipts` | org, uploader, opaque object key/bucket, MIME, size, SHA-256, encryption version, scan status/result, bounded security flags, extraction fields. Raw bytes are not stored for new uploads. |
-| `expense_receipts` | org, expense, receipt, revision, position, evidence type, current marker, superseded link, uploader, timestamp; append-only evidence history. |
+| `expense_receipts` | org, expense, receipt, revision, stable line position, employee-confirmed merchant/amount/currency/date, evidence type, current marker, superseded link, uploader, timestamp; append-only bundle history. Unique expense/revision/position and expense/revision/receipt. |
 | `assessment_attempts` | org, expense, attempt number, technical status, recommendation, engine/prompt/model/provider versions, usage/latency. |
 | `assessment_checks` | attempt, stable check key, source, status, reason code, bounded explanation. |
 | `assessment_citations` | check, policy section FK, optional offsets/source hash. |
@@ -451,16 +451,17 @@ Enforce the transition matrix in domain code and with database constraints/optim
 
 ## 10. Critical runtime workflows
 
-### Claim submission transaction
+### Expense-report submission transaction
 
 1. Authenticate and resolve tenant membership.
 2. Before claim submission, validate upload size, allowlisted MIME, and magic bytes; encrypt with AES-256-GCM using the opaque object key as authenticated data and store in the private quarantine bucket.
 3. Stream raw bytes to the isolated ClamAV service. Scanner error fails closed; no parser or OCR runs first.
 4. For malware-clean data, enforce exact image/PDF structure and resource limits, reject encrypted/active/embedded PDF content, then extract text and flag prompt-injection patterns.
 5. Promote only security-cleared ciphertext to the clean bucket; blocked objects remain quarantined and are not downloadable/submittable.
-6. Validate the expense body with Pydantic, load the employee-owned clean receipt, and read the active published policy version.
-7. In one SQLAlchemy transaction create the expense, append the immutable receipt revision, append `expense.submitted`, and create an assessment-outbox row.
-8. Return `202 Accepted`, claim ID, state, and correlation ID. A retry with the same idempotency key returns the original result; the outbox relay repairs enqueue failure.
+6. Validate one to 20 unique receipt lines with Pydantic, load every employee-owned clean receipt, and read the active published policy version. All lines share one category and purpose.
+7. Derive the total, oldest incurred date, display label, and ordered bundle hash server-side. Never trust a client-supplied aggregate.
+8. In one SQLAlchemy transaction create one expense-report header, append one immutable `expense_receipts` association per positioned line, append `expense.report_submitted`, and create an assessment-outbox row.
+9. Return `202 Accepted`, report ID, state, and correlation ID. A retry with the same idempotency key returns the original result; the outbox relay repairs enqueue failure.
 
 ### Assessment worker
 
@@ -491,7 +492,8 @@ Enforce the transition matrix in domain code and with database constraints/optim
 
 - Reviewer names structured missing fields plus a bounded message.
 - Employee may edit only allowed submission fields.
-- Resubmission creates a new claim revision and assessment attempt; old evidence remains visible.
+- A missed receipt can be uploaded and appended without re-uploading current evidence. Explicit `REPLACE` mode supplies a complete replacement bundle.
+- Resubmission creates a complete immutable bundle snapshot and a new assessment attempt; carried-forward, replaced, and additional associations are distinguished and old evidence remains visible.
 - Recommendation history is append-only.
 
 ---
@@ -721,6 +723,7 @@ The model never returns the authoritative final recommendation field used by the
 | POST | `/api/v1/policies/{id}/publish` | Admin | 201 version | 409 invalid/current race, 422 rule validation |
 | GET | `/api/v1/policies/{id}` | scoped | 200 | 403/404 indistinguishable across tenant boundary |
 | POST | `/api/v1/expenses` | Employee/Admin | 202 | 409 idempotency mismatch, 422 validation |
+| POST | `/api/v1/expense-reports` | Employee/Admin | 202 | 404 unowned receipt, 409 unscanned/idempotency mismatch, 422 duplicate/invalid lines |
 | GET | `/api/v1/expenses` | scoped | 200 | 400 cursor, 403 |
 | GET | `/api/v1/expenses/{id}` | scoped | 200 | 404 for absent/not-visible |
 | POST | `/api/v1/expenses/{id}/decisions` | Reviewer/Admin | 201 | 409 stale/final/idempotency, 422 reason |

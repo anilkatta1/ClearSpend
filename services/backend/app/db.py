@@ -196,6 +196,10 @@ class ExpenseReceipt(Base):
     is_current: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     supersedes_id: Mapped[str | None] = mapped_column(ForeignKey("expense_receipts.id"))
     uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    claimed_merchant: Mapped[str | None] = mapped_column(String(160))
+    claimed_amount_minor: Mapped[int | None] = mapped_column(BigInteger)
+    claimed_currency: Mapped[str | None] = mapped_column(String(3))
+    claimed_incurred_date: Mapped[date | None] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     receipt: Mapped[Receipt] = relationship(lazy="selectin")
 
