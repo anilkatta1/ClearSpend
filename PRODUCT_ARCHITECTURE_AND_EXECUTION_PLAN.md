@@ -2,11 +2,11 @@
 
 > **Mission:** Build a credible, original, trustworthy finance-operations assistant for one bounded expense workflow.
 
-> **Deadline:** Tuesday, September 15, 2026, end of day IST
+> **Status:** Historical planning document. Current implementation truth is in [`docs/architecture/as-built-architecture.md`](docs/architecture/as-built-architecture.md), and completion gaps are in [`docs/submission-readiness-audit.md`](docs/submission-readiness-audit.md).
 
 > **Plan date:** September 3, 2026
 
-> **Architect/Engineer:** Anil Katta · **PM:** Lay Naik · **Sales:** Niraj Gupta
+> **Architect/Engineer:** Anil Katta · **PMs:** Diya Mondal and Prashant Chouksey (shared accountability; division must be recorded) · **Sales:** Niraj Gupta
 
 ---
 

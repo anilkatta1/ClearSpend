@@ -13,14 +13,14 @@ The gate checks Ruff, strict mypy, backend tests, ESLint, TypeScript, frontend t
 - State-machine transitions and invalid transition rejection
 - Money/currency and deterministic rule boundary behavior
 - Fail-closed aggregation for unknown and technical outcomes
-- Prompt-injection-like semantic input
+- Prompt-injection-like claim input and receipt evidence; receipt flags skip optional AI
 - Authenticated encryption round trip, cross-key/object-key denial, and ciphertext tamper rejection
 - Shallow signature validation separated from post-malware deep document parsing
 - Passive PDF initial-page destinations are accepted while JavaScript and action dictionaries remain blocked
 - Live ClamAV EICAR detection using a synthetic PDF and quarantined-content download denial
 - Receipt replacement creates an immutable second revision and exactly one current association
 - Multi-receipt reports enforce unique clean receipt ownership, derive the aggregate server-side, and evaluate merchant/date/amount for every line
-- Deterministic prohibition short-circuiting AI
+- Deterministic prohibition short-circuiting AI and retaining rejection precedence over unknown receipt evidence
 - Hash-linked audit integrity and tamper detection
 - Concurrent authorized receipt reads preserve the per-tenant audit chain
 - Frontend money formatting contract

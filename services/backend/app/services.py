@@ -185,19 +185,16 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
         .where(PolicySection.policy_version_id == expense.policy_version_id)
         .order_by(PolicyRule.priority)
     ).all()
-    state = assess_claim(
-        ClaimFacts(
-            amount_minor=expense.amount_minor,
-            currency=expense.currency,
-            category=expense.category,
-            merchant=expense.merchant,
-            purpose=expense.purpose,
-            incurred_date=expense.incurred_date,
-            submitted_date=expense.submitted_at.date(),
-            receipt_present=expense.receipt_present,
-            receipt_hash=expense.receipt_hash,
-        ),
-        [(row[0], row[1], row[2]) for row in policy_rules],
+    facts = ClaimFacts(
+        amount_minor=expense.amount_minor,
+        currency=expense.currency,
+        category=expense.category,
+        merchant=expense.merchant,
+        purpose=expense.purpose,
+        incurred_date=expense.incurred_date,
+        submitted_date=expense.submitted_at.date(),
+        receipt_present=expense.receipt_present,
+        receipt_hash=expense.receipt_hash,
     )
     receipt_section_id = next(
         (str(row[2]) for row in policy_rules if row[0] == "receipt_required"),
@@ -252,20 +249,14 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
                 policy_section_ids=[receipt_section_id],
             )
         )
-    state["checks"] = [*state["checks"], *receipt_checks]
-    if (
-        any(check.status == CheckStatus.UNKNOWN for check in receipt_checks)
-        and state.get("recommendation") == Recommendation.APPROVE
-    ):
-        state["recommendation"] = Recommendation.REVIEW
     flagged_receipts = [
         item.receipt
         for item in current_receipt_versions
         if any(flag.startswith("PROMPT_INJECTION_PATTERN_") for flag in item.receipt.security_flags)
     ]
+    initial_checks = list(receipt_checks)
     if flagged_receipts:
-        state["checks"] = [
-            *state["checks"],
+        initial_checks.append(
             PolicyCheck(
                 check_key="receipt_prompt_injection",
                 source="DETERMINISTIC",
@@ -277,9 +268,14 @@ def process_assessment(session: Session, expense_id: str, correlation_id: str) -
                 ),
                 policy_section_ids=[receipt_section_id],
                 evidence_refs=[receipt.content_hash for receipt in flagged_receipts],
-            ),
-        ]
-        state["recommendation"] = Recommendation.REVIEW
+            )
+        )
+    state = assess_claim(
+        facts,
+        [(row[0], row[1], row[2]) for row in policy_rules],
+        initial_checks=initial_checks,
+        ai_blocked_evidence=[receipt.content_hash for receipt in flagged_receipts],
+    )
     attempt = AssessmentAttempt(
         organization_id=expense.organization_id,
         expense_id=expense.id,

@@ -19,6 +19,7 @@ class AssessmentState(TypedDict, total=False):
     facts: ClaimFacts
     rules: list[tuple[str, dict[str, Any], str]]
     checks: list[PolicyCheck]
+    ai_blocked_evidence: list[str]
     section_ids: list[str]
     technical_failure: bool
     recommendation: Recommendation
@@ -32,7 +33,7 @@ def load_context(state: AssessmentState) -> AssessmentState:
 
 
 def run_rules(state: AssessmentState) -> AssessmentState:
-    return {"checks": evaluate_rules(state["facts"], state["rules"])}
+    return {"checks": [*state.get("checks", []), *evaluate_rules(state["facts"], state["rules"])]}
 
 
 def semantic_needed(state: AssessmentState) -> str:
@@ -41,6 +42,27 @@ def semantic_needed(state: AssessmentState) -> str:
 
 def run_semantic(state: AssessmentState) -> AssessmentState:
     facts = state["facts"]
+    blocked_evidence = state.get("ai_blocked_evidence", [])
+    if blocked_evidence:
+        return {
+            "checks": [
+                *state["checks"],
+                PolicyCheck(
+                    check_key="semantic_input_guardrail",
+                    source="AI",
+                    status=CheckStatus.UNKNOWN,
+                    reason_code="UNTRUSTED_RECEIPT_INSTRUCTION",
+                    explanation=(
+                        "Receipt evidence contained instruction-like text, so the model call "
+                        "was skipped and human review is required."
+                    ),
+                    policy_section_ids=state["section_ids"][:1],
+                    evidence_refs=blocked_evidence[:10],
+                ),
+            ],
+            "provider": "guardrail",
+            "model": None,
+        }
     untrusted_flags = prompt_injection_flags("\n".join((facts.merchant, facts.purpose)))
     if untrusted_flags:
         return {
@@ -111,9 +133,20 @@ assessment_graph = builder.compile()
 
 
 def assess_claim(
-    facts: ClaimFacts, rules: list[tuple[str, dict[str, Any], str]]
+    facts: ClaimFacts,
+    rules: list[tuple[str, dict[str, Any], str]],
+    *,
+    initial_checks: list[PolicyCheck] | None = None,
+    ai_blocked_evidence: list[str] | None = None,
 ) -> AssessmentState:
     return cast(
         AssessmentState,
-        assessment_graph.invoke({"facts": facts, "rules": rules, "checks": []}),
+        assessment_graph.invoke(
+            {
+                "facts": facts,
+                "rules": rules,
+                "checks": initial_checks or [],
+                "ai_blocked_evidence": ai_blocked_evidence or [],
+            }
+        ),
     )

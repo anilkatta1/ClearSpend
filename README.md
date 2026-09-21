@@ -39,4 +39,4 @@ make verify
 python scripts/smoke.py
 ```
 
-See `TECHNICAL_ARCHITECTURE_IMPLEMENTATION_PLAN.md`, `CONTEXT.md`, `docs/adr/`, and `docs/operations/local-runbook.md` for architecture and operations. The product-team response and deferred boundaries are in `docs/product/ramp-release-response.md`. Grading evidence is indexed in `docs/evidence/rubric-matrix.csv`; the decision and AI records are in `docs/decision-log.md` and `docs/ai-collaboration-disclosure.md`.
+The implemented system is documented in `docs/architecture/as-built-architecture.md`; it takes precedence over historical target-state plans. See `CONTEXT.md`, `docs/adr/`, and `docs/operations/local-runbook.md` for supporting architecture and operations. The product-team response and deferred boundaries are in `docs/product/ramp-release-response.md`. Assignment gaps and accountable-owner actions are in `docs/submission-readiness-audit.md`. Grading evidence is indexed in `docs/evidence/rubric-matrix.csv`; the decision and AI records are in `docs/decision-log.md` and `docs/ai-collaboration-disclosure.md`.

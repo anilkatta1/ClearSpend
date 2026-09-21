@@ -1,8 +1,8 @@
 # ClearSpend — Technical Architecture and Implementation Plan
 
-> **Status:** Architecture baseline for implementation  
+> **Status:** Historical target-state implementation plan. For the verified current system, use [`docs/architecture/as-built-architecture.md`](docs/architecture/as-built-architecture.md). Items such as Render, OpenTelemetry/Grafana, Playwright/k6, managed KMS, and live-model validation are not implemented unless the as-built document says otherwise.
 > **Prepared:** September 7, 2026 (IST)  
-> **Delivery deadline:** September 15, 2026 EOD IST  
+> **Schedule note:** Original delivery dates are retained only as historical planning context.
 > **Accountable technical owner:** Anil Katta — Architect / Engineer  
 > **Companion document:** `PRODUCT_ARCHITECTURE_AND_EXECUTION_PLAN.md`
 

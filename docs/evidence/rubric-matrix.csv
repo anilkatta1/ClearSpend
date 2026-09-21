@@ -1,10 +1,18 @@
 rubric_area,implementation,evidence,verification,status
 Core flow,Expense submission through human decision,synthetic live smoke trace,make smoke,implemented_mvp
-Architecture,C4 plan and ADRs,architecture documents,documentation review,complete
+Architecture,As-built runtime security reliability data and trade-off design,docs/architecture/as-built-architecture.md and ADRs,documentation plus code review,implemented_mvp
 Risk tests,State transitions rule boundaries precedence fallback and injection,pytest and Hypothesis suite,make test,implemented_mvp
 Reproducibility,Docker Compose migrations seed and lockfiles,successful clean image build,make demo,implemented_mvp
 Telemetry,Correlation IDs structured logs health checks and outbox signals,live service logs,make smoke,implemented_mvp
 Release risk paths,"Merchant/date/amount receipt matching, INR-safe rules, actor/body-safe idempotency, tenant denial, durable export failure/retry, outbox recovery, audit verification",unit suite plus PostgreSQL integration tests and automated live smoke,"pytest; python scripts/smoke.py; GitHub Actions",implemented_mvp
 Ramp-aligned scope,"Receipt-first reimbursement review with information request and accounting CSV; no money movement",product assessment response,docs/product/ramp-release-response.md,implemented_mvp
 Security,Server-derived tenant scope RBAC and synthetic data,live cross-tenant 404 plus threat model,make smoke,implemented_mvp
-Pricing/GTM,"Free guided evaluation, paid design-partner pilot, included-claim metric, WTP gates, unit economics, and rejected alternatives",docs/pricing.md,documentation review,hypothesis_documented
+Pricing/GTM,"Free guided evaluation, paid design-partner pilot, included-claim metric, WTP gates, unit economics, and rejected alternatives",docs/pricing.md,documentation review,hypothesis_documented_needs_wtp
+Real-user evidence,3-5 relevant users with hypothesis-to-evidence-to-decision traces,not present,team evidence review,missing
+Stakeholder interviews,Consent-safe script notes synthesis and resulting changes,not present,team evidence review,missing
+Business Model Canvas,All required blocks with evidence-linked assumptions,initial content only in product plan,team evidence review,partial_needs_standalone
+Roadmap,Now-next-later sequenced by evidence risk and dependencies,draft content only in product plan,team evidence review,partial_needs_standalone
+Pitch deck,Problem insight demo market model evidence competition roadmap and ask,outline only,live rehearsal,missing
+Role evidence,One required role evidence file per learner,not present,team evidence review,missing
+Community evidence,Three evidence-backed checkpoints and constructive responses per learner,not present in repository,link and artifact review,missing_or_external
+Decision log and AI disclosure,Architecture decisions tool use verification and total spend,docs/decision-log.md and docs/ai-collaboration-disclosure.md,documentation review,partial_needs_customer_decisions_and_spend
