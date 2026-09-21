@@ -480,18 +480,23 @@ export default function Home() {
               <div className="receiptList">
                 <strong>{expense.receipt_items.length} current receipt line{expense.receipt_items.length === 1 ? "" : "s"}</strong>
                 {expense.receipt_items.map((item) => (
-                  <button
-                    className="secondary receiptPreviewButton"
-                    type="button"
-                    key={item.version_id}
-                    disabled={previewLoadingId === item.receipt_id}
-                    aria-label={`Preview receipt line ${item.position}: ${item.filename}`}
-                    onClick={() => void previewReceipt(item)}
-                  >
-                    <EyeIcon />
-                    <span>{previewLoadingId === item.receipt_id ? "Opening preview…" : `Preview line ${item.position}`}</span>
-                    <small>{item.merchant} · {formatMoney(item.amount_minor, item.currency)} · {item.incurred_date}</small>
-                  </button>
+                  <div className="receiptListItem" key={item.version_id}>
+                    <span>
+                      <strong>Line {item.position} · {item.merchant}</strong>
+                      <small>{formatMoney(item.amount_minor, item.currency)} · {item.incurred_date}</small>
+                    </span>
+                    <button
+                      className="secondary receiptPreviewButton"
+                      type="button"
+                      title={`Preview ${item.filename}`}
+                      disabled={previewLoadingId === item.receipt_id}
+                      aria-busy={previewLoadingId === item.receipt_id}
+                      aria-label={`Preview receipt line ${item.position}: ${item.filename}`}
+                      onClick={() => void previewReceipt(item)}
+                    >
+                      <EyeIcon />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
