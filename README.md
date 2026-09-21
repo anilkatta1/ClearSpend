@@ -21,6 +21,8 @@ make demo
 
 Open <http://localhost:3000>. Demo identities are selected in the UI. API docs are at <http://localhost:8000/docs>.
 
+Synthetic PDF receipts for a manual UI walkthrough are committed in [`demo/receipts`](demo/receipts/README.md). They cover a hotel, train, and taxi flow and contain no personal or client data.
+
 The release flow is:
 
 1. Employee selects one or many JPEG, PNG, or PDF receipts for the same category. ClearSpend encrypts each into quarantine, malware-scans before parsing, validates structure, and promotes only clean objects for preview and extraction.
