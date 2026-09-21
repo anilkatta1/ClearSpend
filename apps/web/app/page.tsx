@@ -33,6 +33,7 @@ export default function Home() {
   const [audit, setAudit] = useState<{ chain_valid: boolean; events: Array<Record<string, unknown>> } | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const identity = identities[role];
   const reviewStartedAt = useRef(0);
@@ -186,8 +187,10 @@ export default function Home() {
       return;
     }
     setBusy(true);
+    setNotice("");
     try {
-      await api(`/expenses/${expense.id}/resubmissions`, identity, { method: "POST", body: JSON.stringify({ purpose, items: receiptWasRequested ? requestedReceipts.map((item) => ({ receipt_id: item.receipt.id, merchant: item.merchant, amount_minor: Math.round(Number(item.amount) * 100), currency: "INR", incurred_date: item.date })) : null, items_mode: "APPEND" }) });
+      const updatedExpense = await api<Expense>(`/expenses/${expense.id}/resubmissions`, identity, { method: "POST", body: JSON.stringify({ purpose, items: receiptWasRequested ? requestedReceipts.map((item) => ({ receipt_id: item.receipt.id, merchant: item.merchant, amount_minor: Math.round(Number(item.amount) * 100), currency: "INR", incurred_date: item.date })) : null, items_mode: "APPEND" }) });
+      setExpenses((current) => current.map((item) => item.id === expense.id ? updatedExpense : item));
       if (receiptWasRequested) {
         requestedReceipts.forEach((item) => URL.revokeObjectURL(item.preview));
         setSupplementItems((current) => {
@@ -196,6 +199,7 @@ export default function Home() {
           return next;
         });
       }
+      setNotice(`Requested information submitted for report ${expense.id.slice(0, 8)}. It has moved back to finance review.`);
       await refresh();
     }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Resubmission failed"); }
@@ -219,10 +223,16 @@ export default function Home() {
     finally { setBusy(false); }
   }
 
+  const actionRequiredExpenses = role === "Employee"
+    ? expenses.filter((expense) => expense.state === "INFORMATION_REQUESTED"
+      && (expense.requested_fields.length > 0 || Boolean(expense.information_request_message)))
+    : [];
+
   return <main>
     <header className="topbar"><div className="brand"><span className="mark">C</span><div><strong>ClearSpend</strong><small>Receipt-to-accounting evidence</small></div></div><label className="role">View as<select value={role} onChange={(event) => setRole(event.target.value as RoleName)}>{Object.keys(identities).map((name) => <option key={name}>{name}</option>)}</select></label></header>
     <section className="hero"><div><p className="eyebrow">REIMBURSEMENT CONTROL CENTER</p><h1>From receipt to books,<br /><em>clear and accountable.</em></h1><p>Receipt extraction, deterministic policy checks, bounded AI assistance, human authority, and an accountant-ready handoff.</p></div><div className="trust"><span>● System operational</span><strong>{expenses.filter((e) => e.state === "AWAITING_REVIEW").length}</strong><small>awaiting review</small></div></section>
     {error && <div className="alert" role="alert">{error}</div>}
+    {notice && <div className="notice" role="status">✓ {notice}</div>}
     {role === "Employee" && (
       <section className="panel">
         <div className="panelTitle">
@@ -319,7 +329,7 @@ export default function Home() {
         </form>
       </section>
     )}
-    {role === "Employee" && expenses.some((expense) => expense.state === "INFORMATION_REQUESTED") && (
+    {actionRequiredExpenses.length > 0 && (
       <section className="panel actionRequired">
         <div className="panelTitle">
           <div>
@@ -329,7 +339,7 @@ export default function Home() {
           <span className="step">Original receipts stay attached</span>
         </div>
         <div className="cards">
-          {expenses.filter((expense) => expense.state === "INFORMATION_REQUESTED").map((expense) => {
+          {actionRequiredExpenses.map((expense) => {
             const requestedReceipts = supplementItems[expense.id] ?? [];
             const receiptWasRequested = expense.requested_fields.includes("receipt");
             return (
@@ -337,10 +347,11 @@ export default function Home() {
                 <div className="claimHead">
                   <div>
                     <strong>{expense.merchant}</strong>
-                    <small>{expense.receipt_items.length} existing receipt line{expense.receipt_items.length === 1 ? "" : "s"}</small>
+                    <small>{expense.category} · {expense.incurred_date} · report {expense.id.slice(0, 8)}</small>
                   </div>
                   <strong>{formatMoney(expense.amount_minor, expense.currency)}</strong>
                 </div>
+                <p className="actionContext"><strong>{expense.purpose}</strong><br />{expense.receipt_items.length} existing receipt line{expense.receipt_items.length === 1 ? "" : "s"}</p>
                 <div className="infoRequest">
                   <strong>Finance requested: {expense.requested_fields.join(", ")}</strong>
                   <p>{expense.information_request_message}</p>
