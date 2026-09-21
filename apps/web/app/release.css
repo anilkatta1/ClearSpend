@@ -35,9 +35,22 @@
 .reportForm { padding-top:18px; border-top:1px solid var(--line); }
 .receiptList { display:flex; flex-direction:column; align-items:flex-start; gap:8px; margin:12px 0; }
 .receiptList button { width:100%; text-align:left; }
+.receiptPreviewButton { display:grid; grid-template-columns:22px auto 1fr; align-items:center; gap:8px; }
+.receiptPreviewButton svg { color:var(--green); }
+.receiptPreviewButton span { font-weight:750; }
+.receiptPreviewButton small { color:var(--muted); text-align:right; }
+.receiptModalBackdrop { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:24px; background:#0b1711cc; backdrop-filter:blur(5px); }
+.receiptModal { width:min(1000px, 96vw); height:min(860px, 92vh); display:grid; grid-template-rows:auto minmax(0, 1fr) auto; overflow:hidden; border:1px solid #ffffff55; border-radius:18px; background:var(--card); box-shadow:0 28px 80px #0008; }
+.receiptModal header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 20px; border-bottom:1px solid var(--line); }
+.receiptModal h2 { max-width:70vw; margin:3px 0 0; overflow:hidden; color:var(--ink); font:500 23px Georgia; text-overflow:ellipsis; white-space:nowrap; }
+.receiptModalClose { flex:none; }
+.receiptModalBody { min-height:0; display:grid; place-items:center; overflow:auto; padding:14px; background:#e9ebe6; }
+.receiptModalBody img { width:auto; max-width:100%; height:auto; max-height:100%; object-fit:contain; box-shadow:0 8px 30px #14231d26; }
+.receiptModalBody object { width:100%; height:100%; min-height:480px; border:0; background:white; }
+.receiptModal footer { padding:11px 20px; color:var(--muted); font-size:12px; text-align:center; border-top:1px solid var(--line); }
 .actionRequired { border:2px solid #d99a32; background:#fffdf7; }
 .supplement { border-color:#d99a32; }
 .supplementUpload { margin-top:14px; background:#fffaf0; border-color:#d99a32; }
 .supplementItems { margin-top:14px; }
 .supplement > .actions { margin-top:16px; }
-@media(max-width:760px) { .receiptEditor, .receiptMeta { grid-template-columns:1fr; } .receiptMeta label:last-child { grid-column:auto; } }
+@media(max-width:760px) { .receiptEditor, .receiptMeta { grid-template-columns:1fr; } .receiptMeta label:last-child { grid-column:auto; } .receiptPreviewButton { grid-template-columns:22px 1fr; } .receiptPreviewButton small { grid-column:1/-1; text-align:left; } .receiptModalBackdrop { padding:8px; } .receiptModal { width:100%; height:96vh; } }

@@ -13,12 +13,23 @@ type ReceiptDraft = {
   amount: string;
   date: string;
 };
+type ReceiptPreview = {
+  url: string;
+  filename: string;
+  contentType: string;
+};
+
+function EyeIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>;
+}
 
 export default function Home() {
   const [role, setRole] = useState<RoleName>("Employee");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [receiptItems, setReceiptItems] = useState<ReceiptDraft[]>([]);
   const [supplementItems, setSupplementItems] = useState<Record<string, ReceiptDraft[]>>({});
+  const [receiptPreview, setReceiptPreview] = useState<ReceiptPreview | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
   const [audit, setAudit] = useState<{ chain_valid: boolean; events: Array<Record<string, unknown>> } | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [error, setError] = useState("");
@@ -47,6 +58,38 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (!receiptPreview) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setReceiptPreview(null);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+      URL.revokeObjectURL(receiptPreview.url);
+    };
+  }, [receiptPreview]);
+
+  async function previewReceipt(item: Expense["receipt_items"][number]) {
+    setPreviewLoadingId(item.receipt_id);
+    setError("");
+    try {
+      const blob = await download(`/api/v1/receipts/${item.receipt_id}/content`, identity);
+      setReceiptPreview({
+        url: URL.createObjectURL(blob),
+        filename: item.filename,
+        contentType: item.content_type || blob.type,
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Receipt preview failed");
+    } finally {
+      setPreviewLoadingId(null);
+    }
+  }
 
   async function upload(event: ChangeEvent<HTMLInputElement>, expense?: Expense) {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -401,7 +444,110 @@ export default function Home() {
         </div>
       </section>
     )}
-    <section className="panel"><div className="panelTitle"><div><p className="eyebrow">{role === "Reviewer" ? "REVIEW QUEUE" : "CLAIMS"}</p><h2>{role === "Reviewer" ? "Decisions that need you" : "Expense activity"}</h2></div><button className="secondary" onClick={() => void refresh()}>Refresh</button></div><div className="cards">{expenses.length === 0 && <p className="empty">No claims visible for this identity.</p>}{expenses.map((expense) => <article className="claim" key={expense.id}><div className="claimHead"><div><strong>{expense.merchant}</strong><small>{expense.category} · {expense.incurred_date}</small></div><strong>{formatMoney(expense.amount_minor, expense.currency)}</strong></div><div className="badges"><span className={`state ${expense.state.toLowerCase()}`}>{expense.state.replaceAll("_", " ")}</span>{expense.recommendation && <span className="recommendation">Recommendation—not decision: {expense.recommendation.replaceAll("_", " ")}</span>}</div><p>{expense.purpose}</p>{expense.receipt_items.length > 0 && <div className="receiptList"><strong>{expense.receipt_items.length} current receipt line{expense.receipt_items.length === 1 ? "" : "s"}</strong>{expense.receipt_items.map((item) => <button className="secondary" type="button" key={item.version_id} onClick={async () => { const blob = await download(`/api/v1/receipts/${item.receipt_id}/content`, identity); window.open(URL.createObjectURL(blob)); }}>Line {item.position} · {item.merchant} · {formatMoney(item.amount_minor, item.currency)} · {item.incurred_date}</button>)}</div>}{expense.receipt_history.length > 0 && <details className="checks"><summary>Receipt audit history · {expense.receipt_history.length} evidence version{expense.receipt_history.length === 1 ? "" : "s"}</summary>{expense.receipt_history.map((item) => <div className="checkRow" key={item.version_id}><span className={item.scan_status === "CLEAN" ? "pass" : "unknown"}>R{item.revision}</span><p><strong>Line {item.position} · {item.attachment_type.replaceAll("_", " ")}{item.is_current ? " · current" : " · superseded"}</strong><br />{item.filename} · {item.claimed_amount_minor ? formatMoney(item.claimed_amount_minor, item.claimed_currency || "INR") : "unconfirmed amount"} · {item.scan_status.toLowerCase()} · hash {item.content_hash.slice(0, 12)}…</p></div>)}</details>}{expense.information_request_message && <div className="infoRequest"><strong>Finance requested: {expense.requested_fields.join(", ")}</strong><p>{expense.information_request_message}</p></div>}{expense.checks.length > 0 && <div className="checks"><strong>{expense.checks.length} evidence checks</strong>{expense.checks.map((check) => <div className="checkRow" key={check.check_key}><span className={check.status.toLowerCase()}>{check.status}</span><p><strong>{check.source} · {check.reason_code.replaceAll("_", " ")}</strong><br />{check.explanation}</p></div>)}</div>}{expense.policy_citations.map((citation) => <blockquote key={citation.id}><strong>{citation.title}</strong><span>{citation.text}</span></blockquote>)}{(role === "Reviewer" || role === "Admin") && expense.state === "AWAITING_REVIEW" && <div className="actions"><button disabled={busy} onClick={() => void decide(expense, "APPROVE")}>Approve</button><button className="danger" disabled={busy} onClick={() => void decide(expense, "REJECT")}>Reject</button><button className="secondary" disabled={busy} onClick={() => void decide(expense, "REQUEST_INFORMATION")}>Request info</button></div>}{role === "Employee" && expense.state === "INFORMATION_REQUESTED" && <div className="actions"><button disabled={busy} onClick={() => void resubmit(expense)}>Update and resubmit</button></div>}{(role === "Reviewer" || role === "Admin") && (expense.state === "READY_TO_EXPORT" || expense.state === "EXPORT_FAILED") && <div className="handoff"><strong>Human-confirmed accounting handoff</strong><p>Confirm coding, then download an accountant-ready CSV. This does not move money.</p><button disabled={busy} onClick={() => void exportCsv(expense)}>Confirm coding & export CSV</button></div>}{expense.export?.status === "EXPORTED" && <div className="verified">✓ Exported to accountant-ready CSV</div>}</article>)}</div></section>
+    <section className="panel">
+      <div className="panelTitle">
+        <div>
+          <p className="eyebrow">{role === "Reviewer" ? "REVIEW QUEUE" : "CLAIMS"}</p>
+          <h2>{role === "Reviewer" ? "Decisions that need you" : "Expense activity"}</h2>
+        </div>
+        <button className="secondary" onClick={() => void refresh()}>Refresh</button>
+      </div>
+      <div className="cards">
+        {expenses.length === 0 && <p className="empty">No claims visible for this identity.</p>}
+        {expenses.map((expense) => (
+          <article className="claim" key={expense.id}>
+            <div className="claimHead">
+              <div><strong>{expense.merchant}</strong><small>{expense.category} · {expense.incurred_date}</small></div>
+              <strong>{formatMoney(expense.amount_minor, expense.currency)}</strong>
+            </div>
+            <div className="badges">
+              <span className={`state ${expense.state.toLowerCase()}`}>{expense.state.replaceAll("_", " ")}</span>
+              {expense.recommendation && <span className="recommendation">Recommendation—not decision: {expense.recommendation.replaceAll("_", " ")}</span>}
+            </div>
+            <p>{expense.purpose}</p>
+            {expense.receipt_items.length > 0 && (
+              <div className="receiptList">
+                <strong>{expense.receipt_items.length} current receipt line{expense.receipt_items.length === 1 ? "" : "s"}</strong>
+                {expense.receipt_items.map((item) => (
+                  <button
+                    className="secondary receiptPreviewButton"
+                    type="button"
+                    key={item.version_id}
+                    disabled={previewLoadingId === item.receipt_id}
+                    aria-label={`Preview receipt line ${item.position}: ${item.filename}`}
+                    onClick={() => void previewReceipt(item)}
+                  >
+                    <EyeIcon />
+                    <span>{previewLoadingId === item.receipt_id ? "Opening preview…" : `Preview line ${item.position}`}</span>
+                    <small>{item.merchant} · {formatMoney(item.amount_minor, item.currency)} · {item.incurred_date}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+            {expense.receipt_history.length > 0 && (
+              <details className="checks">
+                <summary>Receipt audit history · {expense.receipt_history.length} evidence version{expense.receipt_history.length === 1 ? "" : "s"}</summary>
+                {expense.receipt_history.map((item) => (
+                  <div className="checkRow" key={item.version_id}>
+                    <span className={item.scan_status === "CLEAN" ? "pass" : "unknown"}>R{item.revision}</span>
+                    <p><strong>Line {item.position} · {item.attachment_type.replaceAll("_", " ")}{item.is_current ? " · current" : " · superseded"}</strong><br />{item.filename} · {item.claimed_amount_minor ? formatMoney(item.claimed_amount_minor, item.claimed_currency || "INR") : "unconfirmed amount"} · {item.scan_status.toLowerCase()} · hash {item.content_hash.slice(0, 12)}…</p>
+                  </div>
+                ))}
+              </details>
+            )}
+            {expense.information_request_message && <div className="infoRequest"><strong>Finance requested: {expense.requested_fields.join(", ")}</strong><p>{expense.information_request_message}</p></div>}
+            {expense.checks.length > 0 && (
+              <div className="checks">
+                <strong>{expense.checks.length} evidence checks</strong>
+                {expense.checks.map((check) => <div className="checkRow" key={check.check_key}><span className={check.status.toLowerCase()}>{check.status}</span><p><strong>{check.source} · {check.reason_code.replaceAll("_", " ")}</strong><br />{check.explanation}</p></div>)}
+              </div>
+            )}
+            {expense.policy_citations.map((citation) => <blockquote key={citation.id}><strong>{citation.title}</strong><span>{citation.text}</span></blockquote>)}
+            {(role === "Reviewer" || role === "Admin") && expense.state === "AWAITING_REVIEW" && (
+              <div className="actions">
+                <button disabled={busy} onClick={() => void decide(expense, "APPROVE")}>Approve</button>
+                <button className="danger" disabled={busy} onClick={() => void decide(expense, "REJECT")}>Reject</button>
+                <button className="secondary" disabled={busy} onClick={() => void decide(expense, "REQUEST_INFORMATION")}>Request info</button>
+              </div>
+            )}
+            {role === "Employee" && expense.state === "INFORMATION_REQUESTED" && <div className="actions"><button disabled={busy} onClick={() => void resubmit(expense)}>Update and resubmit</button></div>}
+            {(role === "Reviewer" || role === "Admin") && (expense.state === "READY_TO_EXPORT" || expense.state === "EXPORT_FAILED") && (
+              <div className="handoff"><strong>Human-confirmed accounting handoff</strong><p>Confirm coding, then download an accountant-ready CSV. This does not move money.</p><button disabled={busy} onClick={() => void exportCsv(expense)}>Confirm coding & export CSV</button></div>
+            )}
+            {expense.export?.status === "EXPORTED" && <div className="verified">✓ Exported to accountant-ready CSV</div>}
+          </article>
+        ))}
+      </div>
+    </section>
+    {receiptPreview && (
+      <div
+        className="receiptModalBackdrop"
+        role="presentation"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setReceiptPreview(null);
+        }}
+      >
+        <section className="receiptModal" role="dialog" aria-modal="true" aria-labelledby="receipt-preview-title">
+          <header>
+            <div>
+              <p className="eyebrow">SECURE RECEIPT PREVIEW</p>
+              <h2 id="receipt-preview-title">{receiptPreview.filename}</h2>
+            </div>
+            <button className="secondary receiptModalClose" type="button" autoFocus onClick={() => setReceiptPreview(null)} aria-label="Close receipt preview">Close ×</button>
+          </header>
+          <div className="receiptModalBody">
+            {receiptPreview.contentType === "application/pdf" ? (
+              <object data={receiptPreview.url} type="application/pdf">
+                <p>PDF preview is unavailable in this browser.</p>
+              </object>
+            ) : (
+              <Image src={receiptPreview.url} alt={`Receipt preview: ${receiptPreview.filename}`} width={1400} height={1000} unoptimized />
+            )}
+          </div>
+          <footer>Decrypted only for this authorized preview · Close or press Esc to return to the review queue</footer>
+        </section>
+      </div>
+    )}
     {metrics && <section className="panel"><div className="panelTitle"><div><p className="eyebrow">OPERATING SIGNALS</p><h2>What the system can prove</h2></div><span className="step">Not payment evidence</span></div><div className="metricGrid">{Object.entries(metrics).filter(([key]) => key !== "note").map(([key, value]) => <div key={key}><strong>{value === null ? "—" : typeof value === "number" ? Math.round(value * 100) / 100 : value}</strong><span>{key.replaceAll("_", " ")}</span></div>)}</div><p className="empty">{String(metrics.note)}</p></section>}
     {audit && <section className="panel"><div className="panelTitle"><div><p className="eyebrow">AUDIT EVIDENCE</p><h2>Hash-linked event trail</h2></div><span className={audit.chain_valid ? "verified" : "invalid"}>{audit.chain_valid ? "✓ Chain verified" : "! Chain invalid"}</span></div><div className="timeline">{audit.events.map((event) => <div key={String(event.id)}><span>{String(event.sequence).padStart(2, "0")}</span><p><strong>{String(event.action)}</strong><small>{String(event.entity_type)} · {String(event.correlation_id).slice(0, 16)}…</small></p></div>)}</div></section>}
   </main>;
