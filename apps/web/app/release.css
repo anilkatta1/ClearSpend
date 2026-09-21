@@ -35,4 +35,9 @@
 .reportForm { padding-top:18px; border-top:1px solid var(--line); }
 .receiptList { display:flex; flex-direction:column; align-items:flex-start; gap:8px; margin:12px 0; }
 .receiptList button { width:100%; text-align:left; }
+.actionRequired { border:2px solid #d99a32; background:#fffdf7; }
+.supplement { border-color:#d99a32; }
+.supplementUpload { margin-top:14px; background:#fffaf0; border-color:#d99a32; }
+.supplementItems { margin-top:14px; }
+.supplement > .actions { margin-top:16px; }
 @media(max-width:760px) { .receiptEditor, .receiptMeta { grid-template-columns:1fr; } .receiptMeta label:last-child { grid-column:auto; } }
