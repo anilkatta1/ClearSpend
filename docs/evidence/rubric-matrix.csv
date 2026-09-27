@@ -8,8 +8,8 @@ Release risk paths,"Merchant/date/amount receipt matching, INR-safe rules, actor
 Ramp-aligned scope,"Receipt-first reimbursement review with information request and accounting CSV; no money movement",product assessment response,docs/product/ramp-release-response.md,implemented_mvp
 Security,Server-derived tenant scope RBAC and synthetic data,live cross-tenant 404 plus threat model,make smoke,implemented_mvp
 Pricing/GTM,"Free guided evaluation, paid design-partner pilot, included-claim metric, WTP gates, unit economics, and rejected alternatives",docs/pricing.md,documentation review,hypothesis_documented_needs_wtp
-Real-user evidence,3-5 relevant users with hypothesis-to-evidence-to-decision traces,"Anil first-person account and one consented anonymized 21 September finance-team interview summary in docs/anil_docs",team evidence review,partial_needs_additional_users
-Stakeholder interviews,Consent-safe script notes synthesis and resulting changes,"One dated consented anonymized finance-team interview summary with reconstructed script and decision traces",team evidence review,partial_needs_additional_interviews
+Real-user evidence,3-5 relevant users with hypothesis-to-evidence-to-decision traces,"Consent-safe consolidated summaries I-01–I-05 and hypothesis-to-evidence-to-decision traces in docs/interviews/research-insights.md; I-05 is internal context and does not count as independent validation",team evidence review,partial_needs_additional_independent_users
+Stakeholder interviews,Consent-safe script notes synthesis and resulting changes,"Consent-safe interview guide and consolidated anonymized summaries in docs/interviews; consent recorded 18 September",team evidence review,partial_needs_additional_product_interviews
 Business Model Canvas,All required blocks with evidence-linked assumptions,initial content only in product plan,team evidence review,partial_needs_standalone
 Roadmap,Now-next-later sequenced by evidence risk and dependencies,draft content only in product plan,team evidence review,partial_needs_standalone
 Pitch deck,Problem insight demo market model evidence competition roadmap and ask,outline only,live rehearsal,missing

@@ -13,8 +13,8 @@ The engineering MVP is credible and reproducible, but the assignment is **not ye
 | Rubric area | Status | Evidence present | Still required |
 |---|---|---|---|
 | Engineering/reliability/depth | Strong MVP | As-built architecture, ADRs, Compose, migrations/seed, CI, tests, smoke, threat model, runbook | Capture final clean-run/CI evidence. Browser E2E and production identity/KMS remain honest pilot gaps. |
-| 3–5 real users and decision traces | Partial | Anil's first-person account and one consented anonymized dated finance-team interview summary include hypothesis → evidence → decision traces | Obtain consent-respecting observations from enough additional relevant users to reach 3–5; include negative findings. |
-| Stakeholder/client interviews | Partial | One consented anonymized finance-team interview from 21 September includes a reconstructed discussion guide, synthesis and product decisions | Preferably obtain participant confirmation of the edited summary and conduct additional interviews that probe objections and concrete changes. |
+| 3–5 real users and decision traces | Partial | Consent-safe consolidated summaries I-01–I-05 and hypothesis → evidence → decision traces are in [`interviews/research-insights.md`](interviews/research-insights.md). I-05 is internal context, not independent validation. | Obtain consent-respecting observations from enough additional relevant users to reach 3–5; include negative findings and measured outcomes. |
+| Stakeholder/client interviews | Partial | [`interviews/`](interviews/) contains a consent-safe guide, anonymized summaries, and synthesis; consent to share was received 18 September. | Conduct additional product interviews that probe objections and concrete changes; retain participant-summary confirmation where feasible. |
 | Business Model Canvas | Partial | Initial assumptions in product/pricing plans | Standalone canvas with every required block and evidence IDs; distinguish facts from hypotheses. |
 | Pricing/GTM | Partial | Packaging, metric, assumptions, unit-economics model, rejected alternatives | Willingness-to-pay evidence and measured/quoted ranges. |
 | Evidence-backed roadmap | Partial | Draft now/next/later ideas | Standalone roadmap where each item cites evidence/risk/dependency and an exit criterion. |
@@ -51,7 +51,7 @@ Architecture claims must stay precise:
 ### PM — Diya Mondal and Prashant Chouksey
 
 - Record how shared PM accountability is divided while both remain accountable.
-- Validate the existing Anil/employer evidence record, then recruit and observe enough additional relevant users to reach 3–5, with consent and no private data in the repository.
+- Use the consolidated consent-safe records in [`interviews/`](interviews/), then recruit and observe enough additional relevant users to reach 3–5, with consent and no private data in the repository.
 - Assign evidence IDs; document hypothesis → evidence → decision and contradictions.
 - Complete standalone Business Model Canvas and evidence-sequenced now/next/later roadmap.
 - Add interview-driven decisions/rejected alternatives to the decision log.
