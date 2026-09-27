@@ -21,4 +21,4 @@
 
 **Limitations:** Actual usage, billing period and cost remain unknown. The exact Gemini variant, Grok version and historical task-to-model allocation are unrecorded. These estimates are not billing evidence or part of a verified team-spend total.
 
-See [Prashant's role evidence](../../ROLE_EVIDENCE_Prashant_Chouksey.md) and the [AI collaboration disclosure](../ai-collaboration-disclosure.md).
+See the [AI collaboration disclosure](../ai-collaboration-disclosure.md). Prashant's individual role evidence is provided in his own submission as `ROLE_EVIDENCE_Prashant_Chouksey.md`.

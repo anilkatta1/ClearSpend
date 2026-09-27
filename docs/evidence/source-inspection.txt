@@ -1,0 +1,16 @@
+Static source inspection record
+Recorded: 2026-09-27T17:02:56.734489+00:00
+No application, containers, test suite, lint suite or type checker was run for these edits.
+The eight Python files below were successfully parsed with ast.parse; no application modules were imported.
+This establishes Python syntax only, not behavioral correctness or a test pass.
+Niraj separately reports an earlier successful application test.
+
+SHA-256 of syntax-inspected files:
+0baccde3ccdc7535416627ec180d9c03d65bf4ef23e43f121cab2f7d62696ae6  services/backend/app/audit.py
+4ad2d5468725a3d680bad687e900b9f327e921d098a27bc5ff0ce02b60666ba0  services/backend/app/services.py
+b5fab8ad52168191e574c940f15f750c9b25bacd07ddbac6a05263c5bba3347d  services/backend/app/rules.py
+1e36356df819b36fc81d2481b1f97625044eedf0cb655bbd3a810ee08e7c0cf3  services/backend/app/main.py
+3de9f6b35194a2ab23928e65412ea698c2e520b653d63f7aac5d2a51dacccb4b  services/backend/tests/unit/test_audit.py
+34a825a65d70d38685bca3bc598df484e5bf7c1456a77c3237e819ea85372dba  services/backend/tests/unit/test_assessment_dates.py
+b7cee9fcdf674cde2d408253f6ce2ad7c0dec258587984c7aefa989dc58061da  services/backend/tests/integration/test_release_risk_recovery.py
+3e21608c31506a95539a0df8bde01cd1d4a5368950f773e28920376c3c5895bb  scripts/package_submission.py

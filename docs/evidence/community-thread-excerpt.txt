@@ -1,0 +1,210 @@
+Team 7 · Ramp (AI features) · Weeks 3–5 Product Studio
+Use this as Team 7’s shared decision-and-evidence thread for the three-week product studio. The full deliverables, rubric, role-to-member mapping, and ZIP requirements are in your restricted LearnHouse assignment.
+
+Your three accountable roles are Engineer, PM, and Sales. Roles identify accountable owners, not silos. Every person is graded individually for role ownership and discussion quality.
+
+WEEKLY CHECKPOINTS
+
+Week 3 — by Sunday, August 30: post your role plan, problem hypothesis, interview plan, and first decision trace.
+
+Week 4 — by Sunday, September 6: post alpha/build evidence, user feedback, and at least one decision changed because of evidence.
+
+Week 5 — by Sunday, September 13: post a validation result, remaining risk, and launch/pitch readiness.
+
+Final integration — September 14–15: incorporate feedback and submit by Tuesday, September 15, end of day IST.
+
+FOR EACH CHECKPOINT
+
+• Include an artifact, result, or anonymized evidence excerpt.
+
+• State hypothesis → evidence → decision, including what changed.
+
+• Name the biggest current risk or blocker and make a specific ask.
+
+• Constructively respond to teammates or participating clients.
+
+Professional rules: do not fabricate users, interviews, metrics, or outcomes. This community is public, so do not post secrets, client/customer identifiers, private data, or confidential material. Anonymize interview evidence unless you have explicit consent. Clients should participate only with consent and an administrator-approved LearnHouse account.
+
+0
+User Avatar
+admin
+a month ago
+Admin note: The quality of this discussion is evidence that the three of you are actively figuring out the right product details and roadmap together. Use this thread to show how hypotheses, user and stakeholder evidence, trade-offs, and disagreements change product decisions—not merely to post status updates. Strong discussion should make the evolution of the product and roadmap traceable, and it will inform the community-discussion component of your individual grades.
+
+0
+User Avatar
+Lay Naik
+a month ago
+I want to start by narrowing the mission before we jump into features.
+
+The brief says to build a trustworthy finance-operations assistant for a bounded spend or expense workflow. My current hypothesis is that the biggest opportunity is **not to build a general “AI finance assistant,” but to pick one high-friction decision in the spend lifecycle where policy interpretation, approvals, and auditability are currently slow or inconsistent.**
+
+A possible starting problem could be:
+
+> **Employees and approvers spend too much time figuring out whether an expense is compliant, who needs to approve it, and why it was approved or rejected.**
+
+The product hypothesis would then be:
+
+> If we can interpret company policy, evaluate an expense against it, identify the right approval path, and produce a clear evidence-backed explanation and audit trail, we can reduce manual review effort without asking finance teams to give up control.
+
+Before we commit to this, I think we should challenge a few assumptions together:
+
+* **Where is the real pain?** Is it policy checking, approval routing, exception handling, reimbursement review, or something else?
+* **Who feels the pain most strongly?** Employees submitting expenses, managers approving them, or finance/operations teams auditing them?
+* **What should AI actually decide versus only recommend?** For a trustworthy first version, I am leaning toward AI recommending and explaining, with deterministic rules and human approval for consequential actions.
+* **What evidence would make us change direction?** For example, if interviews show that policy interpretation is already easy but approval follow-up is the real bottleneck, we should change the workflow rather than force the original idea.
+* **What is the smallest workflow we can validate with 3–5 real users within three weeks?**
+
+I also want us to avoid assuming that because Ramp has AI features, our product needs to resemble Ramp. The goal should be to find a narrower problem where we can show a measurable improvement and a credible reason for a customer to care.
+
+1
+User Avatar
+Niraj Gupta
+a month ago
+@Lay, I agree that we should narrow the product before discussing features. However, I want to challenge one assumption: routine policy checking may not be the biggest pain. The more valuable problem may be exception handling—expenses with missing information, unclear policy language, exceeded limits, or an uncertain approval path.
+My current hypothesis is:-
+  Finance teams lose the most time resolving expense exceptions through repeated follow-ups among employees, managers, and finance—not processing straightforward,  compliant expenses.
+
+
+0
+User Avatar
+Anil Katta
+20 days ago
+Hi folks, 
+My accountable role is Architect/Engineer. I own architecture, implementation,
+reliability, testing, deployment, telemetry, and technical documentation.
+
+0
+User Avatar
+Anil Katta
+20 days ago
+As discussed, our Problem hypothesis: finance reviewers at 20–200+ person companies lose
+time checking reimbursement evidence against policy and will value review-only
+guidance only when it cites policy and preserves human control.
+
+0
+User Avatar
+Diya Mondal
+18 days ago
+Hi everyone, glad to join the team, please let me know when we can connect for a KT session
+
+0
+User Avatar
+Diya Mondal
+16 days ago
+Team — I consolidated our Ramp research, PM alignment assessment, and engineering review into one canonical document:                                                                                       
+                                                                                                           
+ docs/product/ramp-alignment-assessment.md                                                                 
+                                                                                                           
+ Key takeaway: ClearSpend is well aligned with Ramp’s trust principles—deterministic policy checks, bounded AI, human final authority, versioned policies, and auditability—but we should stay focused on the reimbursement-review wedge rather than expand into cards, payments, AP, or a general finance agent.       
+                                                                                                        
+ Immediate priorities:                                                                                     
+ 1. Fix the identified correctness/security blockers: currency enforcement, idempotency authorization, reproducible submission timestamps, and audit concurrency.                                             
+ 2. Ensure docs, telemetry, evals, and tests accurately reflect what is implemented.                       
+ 3. Gather evidence from 3–5 relevant finance users and convert it into hypothesis → evidence → decision traces.                                                                                                
+ 4. Focus the product on receipt → cited assessment → human decision/request-info → audit trail.           
+                                                                                                           
+ The detailed engineering review remains available as an appendix: docs/clearspend_ramp_alignment_review.md                                                                  
+                                                                                                           
+ Please review the canonical assessment and flag disagreements, especially on user-research ownership, the first customer workflow to test, and what we explicitly defer.
+
+0
+User Avatar
+Diya Mondal
+6 hours ago
+@anilkatta  @nigupta  — I agree with the decision to keep      
+ ClearSpend focused on reimbursement review rather     
+ than broaden into cards, payments, or a general       
+ finance agent.                                        
+                                                       
+ Hypothesis → evidence → decision: We hypothesized     
+ that a unified evidence packet would reduce           
+ fragmented receipt and policy review. Our anonymized  
+ interview synthesis shows qualitative support for     
+ receipt preview, visible policy context, human        
+ decision ownership, and continuing the same case      
+ after missing-information requests. Decision: retain  
+ the receipt → deterministic checks → bounded AI       
+ recommendation → human decision → audit/CSV handoff   
+ flow.                                                 
+                                                       
+ What changed: We are no longer treating broad spend   
+ management or autonomous approval as MVP              
+ requirements. The roadmap now makes customer          
+ validation, reviewer usability, and paid commitment   
+ gates prerequisites for integrations or workflow      
+ expansion.
+
+0
+User Avatar
+Diya Mondal
+6 hours ago
+We are submitting ClearSpend as a bounded             
+ reimbursement-review MVP, not a full spend-management 
+ or autonomous-finance product.                        
+                                                       
+ Evidence → decision: Engineering verification         
+ supports the synthetic receipt submission,            
+ deterministic policy checks, bounded AI assistance,   
+ human reviewer decision, audit history, and CSV       
+ accounting handoff. Interview evidence is qualitative 
+ and consent-safe; it supports the need for            
+ consolidated evidence and human control, but does not 
+  prove time savings, willingness to pay, or           
+ production readiness. Therefore, our pitch and        
+ documentation label customer-value and commercial     
+ claims as hypotheses.                                 
+                                                       
+ Remaining risks: direct product-use validation,       
+ measured reviewer outcomes, paid-pilot conversion,    
+ production authentication/security hardening, and     
+ live accounting-system validation.                    
+                                                       
+ Thank you @anilkatta @nigupta @pchouksey  for the engineering and    
+ sales/research contributions. Our next decision gate  
+ is not more features: it is whether representative    
+ finance reviewers demonstrate safer/faster review     
+ behavior and whether qualified buyers commit to the   
+ defined paid pilot.
+
+0
+User Avatar
+Prashant Chouksey
+6 hours ago
+@dmondal Thanks for the shoutout! Now that the interview findings and pain points are submitted, I completely agree that the focus must shift to testing these hypotheses in practice. I’ll leverage our interview contacts (Ops and IT leadership) to set up the reviewer behavior tests and drive the paid pilot conversions for the next gate.
+
+0
+User Avatar
+Prashant Chouksey
+6 hours ago
+Update regarding the logistics expense reimbursement process. Please note that there is a specific budget provided by the HR team for this. Following the interviews, this entire process needs to be submitted in the doc. Once all logistics transfers are fully completed, employees must use OpenAir to submit all their expense bills and relevant approvals. After the submission is reviewed, the finance team will process and reimburse the approved amount.
+
+0
+User Avatar
+Anil Katta
+6 hours ago
+@dmondal @pchouksey @nigupta — Adding the engineering evidence behind this product decision.
+ClearSpend now has a reproducible containerized architecture with separate Next.js, FastAPI, Procrastinate worker, PostgreSQL, encrypted MinIO storage and ClamAV services. LangGraph remains a bounded library inside the worker rather than an independent autonomous service.
+Hypothesis → evidence → decision: We hypothesized that deterministic finance controls must remain authoritative while AI handles only ambiguity. During the architecture audit, we found that receipt checks and receipt-security flags were being aggregated after the optional AI step. We changed the flow so receipt evidence enters the graph first, suspicious receipt content skips the model, deterministic failures retain rejection precedence, and unknown results require human review.
+Verification evidence: Ruff, mypy, frontend lint/type checks, Compose validation and frontend tests passed; 38 backend tests passed, with two PostgreSQL-specific tests configured for CI. Decision: retain the modular monolith, PostgreSQL-backed durable worker and bounded human-in-the-loop assessment rather than introducing autonomous agents or additional infrastructure without evidence.
+
+0
+User Avatar
+Anil Katta
+6 hours ago
+The finance-team interview also clarified where ClearSpend creates value and where we must keep our claims limited.
+The consented anonymized discussion on 21 September described an existing process where multiple people repeatedly download receipts, confirm budget context with earlier approvers and manually compare the same claim against policy. The participant specifically valued in-product receipt preview, visible policy context, audit history and the ability to request missing evidence while continuing the same reimbursement case.
+
+0
+User Avatar
+Anil Katta
+6 hours ago
+Hypothesis → evidence → decision: We hypothesized that a reusable evidence packet would be more valuable than automating the final approval. The interview provides qualitative support for that hypothesis. Decision: preserve per-receipt checks, pinned policy citations, immutable receipt revisions and human decision ownership. The current MVP intentionally stops at an accounting CSV handoff and does not claim payment execution or replacement of every organizational approval level.
+This evidence confirms product direction, but it does not yet prove measured time savings, willingness to pay or production readiness. Those remain explicitly documented validation gaps rather than pitch claims.
+
+0
+User Avatar
+Niraj Gupta
+6 hours ago
+@Diya, I agree with the narrowed reimbursement-review scope, but from the my side I want to keep a strict boundary between qualitative interest and validated customer value.
+Hypothesis → evidence → decision: We hypothesized that finance teams would value one evidence packet containing receipt previews, policy context, explanations, and decision history. Our anonymized research includes direct qualitative feedback from one finance reviewer and one frequent reimbursement submitter supporting that workflow. The other three interviews are useful process discovery, but they are not product-validation or willingness-to-pay evidence. Therefore, I will position ClearSpend as a bounded reimbursement-review assistant and will not claim proven time savings, demand, or ROI
