@@ -23,6 +23,14 @@
 | D-04 | Evidence gaps should be resolved in the same case. | I-01 valued requesting and appending missing evidence without restarting. | Preserve information-request → resubmission and immutable receipt revision behavior. |
 | D-05 | The MVP must not claim to replace enterprise approval, procurement, budget, or payment systems. | I-02–I-04 describe organization-specific controls beyond reimbursement review. | Keep the scope to human-reviewed reimbursement evidence and accounting CSV handoff; label integrations and multi-stage approvals as future validation. |
 
+## Future implications from process discovery
+
+| Source area | Potential extension | Current boundary |
+|---|---|---|
+| Operations expenses (I-02) | Project/cost-centre coding, cumulative budget tracking, variance alerts, and staged approvals. | Current policy amount limits are not a budget ledger; ClearSpend does not map projects, calculate profitability, or implement organizational approval chains. |
+| Relocation reimbursement (I-04) | Eligibility/offer-linked entitlements, approved-vendor checks, pre-approval evidence, and HR/operations/finance routing. | The generic reimbursement flow does not verify relocation eligibility, validate vendors, prove payment, or disburse reimbursements. |
+| IT procurement (I-03) | A separately scoped requisition, quotation, PO/invoice/delivery matching, asset-tracking, and debit/credit-note module. | These are reusable evidence and audit-control patterns, not implemented ClearSpend procurement features. |
+
 ## What this does *not* establish
 
 - It does not establish a quantified time saving, willingness to pay, production readiness, or an optimal approval hierarchy.
