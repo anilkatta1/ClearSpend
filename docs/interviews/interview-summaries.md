@@ -2,6 +2,16 @@
 
 All summaries are consented, anonymized, and edited for clarity. Consent to share was received on 18 September. They should be read as qualitative evidence, not quantified outcome evidence.
 
+The individual files are the canonical records. The legacy references below remain only because the research synthesis cites them:
+
+| Legacy reference | Canonical record |
+|---|---|
+| I-01 | [`INT-02-finance-reviewer.md`](INT-02-finance-reviewer.md) |
+| I-02 | [`INT-03-head-of-operations.md`](INT-03-head-of-operations.md) |
+| I-03 | [`INT-04-it-head.md`](INT-04-it-head.md) |
+| I-04 | [`INT-05-relocation-stakeholder.md`](INT-05-relocation-stakeholder.md) |
+| I-05 | [`INT-01-employee-submitter.md`](INT-01-employee-submitter.md) |
+
 ## I-01 — Finance-team reviewer: reimbursement review
 
 The participant described a reimbursement process where multiple reviewers repeatedly download receipts, compare merchant/date/amount details, locate policy text, and contact budget owners or earlier approvers. The resulting rationale can be fragmented across messages and documents.

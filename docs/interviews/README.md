@@ -1,6 +1,6 @@
 # Consent-safe interview evidence
 
-This directory is the canonical, consolidated location for interview-derived evidence. It replaces the former contributor-specific folders; those source folders were removed after this sanitized record was prepared.
+This directory is the canonical, consent-safe location for interview-derived evidence. It replaces the former contributor-specific folders; those source folders were removed after these anonymized records were prepared.
 
 ## Consent and privacy
 
@@ -11,12 +11,12 @@ This directory is the canonical, consolidated location for interview-derived evi
 
 ## Evidence index
 
-| ID | Participant category | Topic | Evidence type |
+| Record | Participant category | Topic | Evidence type |
 |---|---|---|---|
-| I-01 | Finance-team reviewer | Employee reimbursement review | Product-feedback summary |
-| I-02 | Operations leader | Internal operating expenses | Process-discovery summary |
-| I-03 | IT procurement leader | IT asset procure-to-pay | Process-discovery summary |
-| I-04 | Relocating employee / HR-process stakeholder | Relocation reimbursement | Process-discovery summary |
-| I-05 | Frequent employee reimbursement submitter | Reimbursement workflow experience and ClearSpend feedback | Independent, consented qualitative product-feedback summary |
+| [`INT-01`](INT-01-employee-submitter.md) | Frequent employee reimbursement submitter | Reimbursement workflow and ClearSpend feedback | Independent qualitative product-feedback summary |
+| [`INT-02`](INT-02-finance-reviewer.md) | Finance-team reviewer | Employee reimbursement review | Independent qualitative product-feedback summary |
+| [`INT-03`](INT-03-head-of-operations.md) | Head of operations | Internal operating expenses | Independent process-discovery summary |
+| [`INT-04`](INT-04-it-head.md) | IT head | IT asset procure-to-pay | Independent process-discovery summary |
+| [`INT-05`](INT-05-relocation-stakeholder.md) | Relocation reimbursement stakeholder | Relocation reimbursement | Independent process-discovery summary |
 
-Use [`research-insights.md`](research-insights.md) for the cross-interview synthesis, limitations, and resulting product decisions. [`interview-guide.md`](interview-guide.md) records the semi-structured finance discussion topics.
+[`interview-summaries.md`](interview-summaries.md) maps the historical `I-01`–`I-05` references used in existing research to these canonical records. Use [`research-insights.md`](research-insights.md) for the cross-interview synthesis, limitations, and resulting product decisions. [`interview-guide.md`](interview-guide.md) records the semi-structured finance discussion topics.
