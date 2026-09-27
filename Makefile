@@ -1,4 +1,4 @@
-.PHONY: setup demo dev db-ui down migrate seed test test-backend test-frontend lint verify smoke logs
+.PHONY: setup demo dev db-ui down migrate seed test test-backend test-frontend lint verify smoke logs submission-zip
 
 setup:
 	uv sync --directory services/backend --all-extras
@@ -45,3 +45,6 @@ smoke:
 
 logs:
 	docker compose logs -f api worker web
+
+submission-zip:
+	./scripts/build_submission_zip.sh Anil_Katta

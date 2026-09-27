@@ -7,7 +7,7 @@
 
 ## Result
 
-The engineering MVP is substantial, but the assignment is **not yet 100% submission-ready**. The architecture, bounded workflow, controls, tests, and local deployment configuration are implemented; final clean-run evidence still needs to be archived. The Business Model Canvas, now/next/later roadmap, pitch deck and both PM role-evidence records exist. Remaining gaps include direct product-use observations, measured outcomes, willingness-to-pay results, roadmap gate execution, pitch rehearsal, Engineering/Sales role records, community-post evidence and whole-team AI spend. Existing interview summaries are qualitative evidence, and the Canvas remains a hypothesis and test-plan artifact.
+The engineering MVP is substantial, but the assignment is **not yet 100% submission-ready**. The architecture, bounded workflow, controls, tests, and local deployment configuration are implemented; final clean-run evidence still needs to be archived. The Business Model Canvas, now/next/later roadmap, pitch deck, Engineering role evidence, and both PM role-evidence records exist. Remaining gaps include direct product-use observations, measured outcomes, willingness-to-pay results, roadmap gate execution, pitch rehearsal, Sales role evidence, community-post permalinks/captures, and whole-team billing confirmation. Existing interview summaries are qualitative evidence, and the Canvas remains a hypothesis and test-plan artifact.
 
 ## Rubric coverage
 
@@ -20,7 +20,7 @@ The engineering MVP is substantial, but the assignment is **not yet 100% submiss
 | Pricing/GTM | Partial | Packaging, metric, assumptions, unit-economics model, rejected alternatives | Willingness-to-pay evidence and measured/quoted ranges. |
 | Evidence-backed roadmap | Partial | [`product/roadmap.md`](product/roadmap.md) is a standalone now/next/later roadmap sequenced by discovery, commercial, security, and operational gates, each with dependencies and exit criteria. | Execute the gates and update the roadmap with observed evidence; do not treat planned tests as validation. |
 | Pitch deck/live narrative | Partial | 11-slide [`pitch-deck/ClearSpend_Pitch_Deck.pdf`](../pitch-deck/ClearSpend_Pitch_Deck.pdf) and `.pptx`, deck source/readme, screenshots, and [`demo/DEMO_NARRATIVE.md`](../demo/DEMO_NARRATIVE.md). | Rehearse and record a live or fallback walkthrough; preserve the evidence/hypothesis labels in delivery. |
-| Individual ownership | Partial | [Diya's role record](../ROLE_EVIDENCE_Diya_Mondal.md) and [Prashant's role record](../ROLE_EVIDENCE_Prashant_Chouksey.md) identify PM contributions and preserve Prashant's confirmation of the responsibility split. | Add Engineering/Sales role records and actual community evidence. The original PM agreement date and team-discussion publication remain unverified. |
+| Individual ownership | Partial | [Anil's Engineering role record](../ROLE_EVIDENCE_Anil_Katta.md), [Diya's PM role record](../ROLE_EVIDENCE_Diya_Mondal.md), and [Prashant's PM role record](../ROLE_EVIDENCE_Prashant_Chouksey.md) connect contributions to inspectable artifacts and commits. | Add Niraj's Sales role record and actual community permalinks or permitted captures. The original PM agreement date and team-discussion publication remain unverified. |
 | Community discussion | Partial external evidence | The external LearnHouse Team 7 thread contains early problem-hypothesis/exception discussion, Anil's role/hypothesis posts, and Diya's alignment post referring to `product/ramp-alignment-assessment.md`. | Preserve direct links or permitted screenshots in the final ZIP. The supplied thread does not yet visibly demonstrate three qualifying weekly checkpoints and constructive replies per learner; do not backdate or fabricate them. |
 | Decision log/AI disclosure | Partial | Architecture/product decisions, Diya's reported USD 16.7903, Anil's transparent token-based estimate, Prashant's declared tool use, and a documented USD 203.7549 subtotal exist. Evidence classes and owner-attestation fields are recorded in [`evidence/ai-spend-billing-attestation.md`](evidence/ai-spend-billing-attestation.md). | Obtain billing-owner confirmation, add Prashant's billed amount and Niraj's usage declaration, and replace Anil's estimate with billed account data if it becomes available. |
 
@@ -45,8 +45,8 @@ Architecture claims must stay precise:
 - Keep the as-built architecture, ADRs, runbook, threat model, and limitations synchronized with code.
 - Archive final `make verify`, database CI, and clean-stack `make smoke` results with commit SHA.
 - Choose local-only or hosted demo explicitly. A hosted customer-data system additionally needs TLS, OIDC/MFA, secrets/KMS, backups/restore, monitoring/alerts, and rollback rehearsal.
-- Add `ROLE_EVIDENCE_Anil_Katta.md` covering architecture, reliability/security, tests, deployment, telemetry, decisions, and cross-functional contributions.
-- Build the ZIP from tracked files only; exclude `.env`, secrets, venvs, `node_modules`, caches, logs, and builds.
+- Keep [`ROLE_EVIDENCE_Anil_Katta.md`](../ROLE_EVIDENCE_Anil_Katta.md) synchronized with accepted engineering work and add genuine community permalinks/captures through [`evidence/community-evidence-anil.md`](evidence/community-evidence-anil.md).
+- Build Anil's ZIP from tracked files only with `make submission-zip`; inspect its manifest and SHA-256 output before upload.
 - Use [`evidence/ai-spend-billing-attestation.md`](evidence/ai-spend-billing-attestation.md) to obtain billing-owner confirmation for every contributor/tool; preserve Anil's reconstruction as an audit trail and replace its submitted amount with billed account data if available.
 
 ### PM — Diya Mondal and Prashant Chouksey

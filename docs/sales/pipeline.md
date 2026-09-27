@@ -16,11 +16,11 @@
 
 | ID | Role | Current stage | Evidence | Missing qualification | Next action |
 |---|---|---|---|---|---|
-| I-01 | Finance-team reviewer | Research participant | Workflow and direct product feedback | Purchase authority, claim volume, exact-price response | Seek a consented commercial follow-up |
-| I-02 | Operations leader | Research participant | Operating-expense workflow | Product evaluation, reimbursement fit, authority, volume, price response | Run a guided evaluation if relevant |
-| I-03 | IT procurement leader | Research participant | Adjacent procure-to-pay workflow | Direct reimbursement need and product fit | Do not qualify unless reimbursement responsibility exists |
-| I-04 | Relocation reimbursement stakeholder | Research participant | Reimbursement process discovery | Product observation, authority, volume, price response | Run a consented product follow-up |
-| I-05 | Product-team member | Internal context | Internal reimbursement experience | Independent-customer status | Exclude from external pipeline |
+| INT-01 | Frequent employee reimbursement submitter | Research participant | Workflow and qualitative product feedback | Buyer authority, claim volume, exact-price response | Use for product observation, not buyer qualification unless authority is established |
+| INT-02 | Finance-team reviewer | Research participant | Workflow and qualitative product feedback | Purchase authority, claim volume, exact-price response | Seek a consented commercial follow-up |
+| INT-03 | Head of operations | Research participant | Operating-expense workflow | Product evaluation, reimbursement fit, authority, volume, price response | Run a guided evaluation only if direct reimbursement responsibility is confirmed |
+| INT-04 | IT procurement leader | Research participant | Adjacent procure-to-pay workflow | Direct reimbursement need and product fit | Do not qualify unless reimbursement responsibility exists |
+| INT-05 | Relocation reimbursement stakeholder | Research participant | Reimbursement process discovery | Product observation, authority, volume, price response | Run a consented product follow-up |
 
 ## Pipeline metrics
 

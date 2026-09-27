@@ -81,4 +81,14 @@ make verify
 python scripts/smoke.py
 ```
 
-The implemented system is documented in [the as-built architecture](docs/architecture/as-built-architecture.md); it takes precedence over historical target-state plans. See `CONTEXT.md`, `docs/adr/`, and `docs/operations/local-runbook.md` for supporting architecture and operations. The product-team response and deferred boundaries are in [the release response](docs/product/ramp-release-response.md). Anonymized interview evidence and research-to-product recommendations are indexed in [the canonical research folder](docs/interviews/README.md). PM attribution and the responsibility split are recorded in [Diya's role evidence](ROLE_EVIDENCE_Diya_Mondal.md) and [Prashant's role evidence](ROLE_EVIDENCE_Prashant_Chouksey.md). Assignment gaps and accountable-owner actions are in [the submission-readiness audit](docs/submission-readiness-audit.md). Grading evidence is indexed in `docs/evidence/rubric-matrix.csv`; the [decision log](docs/decision-log.md) and [AI disclosure](docs/ai-collaboration-disclosure.md) include product decisions and contributor-specific disclosure.
+The implemented system is documented in [the as-built architecture](docs/architecture/as-built-architecture.md); it takes precedence over historical target-state plans. See `CONTEXT.md`, `docs/adr/`, and `docs/operations/local-runbook.md` for supporting architecture and operations. The product-team response and deferred boundaries are in [the release response](docs/product/ramp-release-response.md). Anonymized interview evidence and research-to-product recommendations are indexed in [the canonical research folder](docs/interviews/README.md). Individual ownership is recorded in [Anil's role evidence](ROLE_EVIDENCE_Anil_Katta.md), [Diya's role evidence](ROLE_EVIDENCE_Diya_Mondal.md), and [Prashant's role evidence](ROLE_EVIDENCE_Prashant_Chouksey.md). Assignment gaps and accountable-owner actions are in [the submission-readiness audit](docs/submission-readiness-audit.md). Grading evidence is indexed in `docs/evidence/rubric-matrix.csv`; the [decision log](docs/decision-log.md) and [AI disclosure](docs/ai-collaboration-disclosure.md) include product decisions and contributor-specific disclosure.
+
+## Build Anil's submission ZIP
+
+After committing all reviewed changes and confirming a clean working tree:
+
+```bash
+make submission-zip
+```
+
+This creates `dist/ClearSpend-Anil_Katta.zip` directly from tracked files, validates that it is a real ZIP, rejects forbidden cache/dependency/environment paths, checks the 500 MB uncompressed limit, and prints a SHA-256 digest. The ignored local `.env`, virtual environments, dependency caches, `node_modules`, and generated builds are never read into the archive. `.env.example` contains synthetic local-demo defaults only and no real account secret.
