@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ClearSpend local",
+      "Group": "ClearSpend",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "clears_spend",
+      "Username": "clears_spend",
+      "SSLMode": "prefer",
+      "Comment": "Local Docker Compose database. Use the development password from compose.yaml."
+    }
+  }
+}

@@ -1,4 +1,4 @@
-.PHONY: setup demo dev down migrate seed test test-backend test-frontend lint verify smoke logs
+.PHONY: setup demo dev db-ui down migrate seed test test-backend test-frontend lint verify smoke logs
 
 setup:
 	uv sync --directory services/backend --all-extras
@@ -8,6 +8,9 @@ demo:
 	docker compose up --build
 
 dev: demo
+
+db-ui:
+	docker compose --profile tools up -d pgadmin
 
 down:
 	docker compose down

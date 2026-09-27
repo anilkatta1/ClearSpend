@@ -7,6 +7,18 @@ cp .env.example .env
 make demo
 ```
 
+## Inspect PostgreSQL in pgAdmin
+
+pgAdmin is an optional Compose profile and is not exposed by the normal product startup:
+
+```bash
+make db-ui
+```
+
+Open <http://localhost:5050>. Local desktop mode normally opens directly; if a sign-in screen appears, use `PGADMIN_DEFAULT_EMAIL` and `PGADMIN_DEFAULT_PASSWORD` from `.env`. Expand the pre-registered `ClearSpend local` server and enter the development database password `clears_spend` when first prompted. Tables are under `Databases → clears_spend → Schemas → public → Tables`.
+
+The hostname is `postgres` because pgAdmin runs inside the Compose network. Do not change it to `localhost`; inside the pgAdmin container, `localhost` refers to pgAdmin itself. Port 5050 is bound to `127.0.0.1` so it is reachable only from the host. This administrative UI is for synthetic development data only and must not be exposed publicly.
+
 The stack applies Alembic migrations, applies the Procrastinate schema, seeds synthetic tenants and users, then starts PostgreSQL, MinIO, ClamAV, API, worker, and web services. On first start, ClamAV may need time to download signatures. Open `http://localhost:3000`; API documentation is at `http://localhost:8000/docs`.
 
 ## Health and diagnosis

@@ -13,8 +13,8 @@ The engineering MVP is credible and reproducible, but the assignment is **not ye
 | Rubric area | Status | Evidence present | Still required |
 |---|---|---|---|
 | Engineering/reliability/depth | Strong MVP | As-built architecture, ADRs, Compose, migrations/seed, CI, tests, smoke, threat model, runbook | Capture final clean-run/CI evidence. Browser E2E and production identity/KMS remain honest pilot gaps. |
-| 3–5 real users and decision traces | **Blocked** | Research plan/template only | Consent-respecting observations with anonymized hypothesis → evidence → decision traces, including negative findings. |
-| Stakeholder/client interviews | **Blocked** | Script guidance only | Used script, consent statement, anonymized notes/summaries, synthesis, and exact changes. |
+| 3–5 real users and decision traces | Partial | Anil's first-person account and one consented anonymized dated finance-team interview summary include hypothesis → evidence → decision traces | Obtain consent-respecting observations from enough additional relevant users to reach 3–5; include negative findings. |
+| Stakeholder/client interviews | Partial | One consented anonymized finance-team interview from 21 September includes a reconstructed discussion guide, synthesis and product decisions | Preferably obtain participant confirmation of the edited summary and conduct additional interviews that probe objections and concrete changes. |
 | Business Model Canvas | Partial | Initial assumptions in product/pricing plans | Standalone canvas with every required block and evidence IDs; distinguish facts from hypotheses. |
 | Pricing/GTM | Partial | Packaging, metric, assumptions, unit-economics model, rejected alternatives | Willingness-to-pay evidence and measured/quoted ranges. |
 | Evidence-backed roadmap | Partial | Draft now/next/later ideas | Standalone roadmap where each item cites evidence/risk/dependency and an exit criterion. |
@@ -51,7 +51,7 @@ Architecture claims must stay precise:
 ### PM — Diya Mondal and Prashant Chouksey
 
 - Record how shared PM accountability is divided while both remain accountable.
-- Recruit and observe 3–5 relevant users with consent and no private data in the repository.
+- Validate the existing Anil/employer evidence record, then recruit and observe enough additional relevant users to reach 3–5, with consent and no private data in the repository.
 - Assign evidence IDs; document hypothesis → evidence → decision and contradictions.
 - Complete standalone Business Model Canvas and evidence-sequenced now/next/later roadmap.
 - Add interview-driven decisions/rejected alternatives to the decision log.
@@ -76,4 +76,3 @@ Architecture claims must stay precise:
 ## Definition of 100% done
 
 Every required artifact exists in final form; every rubric row maps to inspectable evidence; all role/community records are present; customer claims come from consent-safe research; the exact submitted commit passes CI and the live journey; total AI spend is recorded; and each submitted ZIP is clean and reproducible.
-

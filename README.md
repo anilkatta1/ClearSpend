@@ -21,6 +21,14 @@ make demo
 
 Open <http://localhost:3000>. Demo identities are selected in the UI. API docs are at <http://localhost:8000/docs>.
 
+To inspect PostgreSQL with pgAdmin, start the optional tools profile:
+
+```bash
+make db-ui
+```
+
+Open <http://localhost:5050>. Local desktop mode normally opens directly; if a sign-in screen appears, use the `PGADMIN_DEFAULT_EMAIL` and `PGADMIN_DEFAULT_PASSWORD` values from `.env`. The `ClearSpend local` server is pre-registered. On its first database connection, enter the local PostgreSQL password `clears_spend`, then browse `Databases → clears_spend → Schemas → public → Tables`.
+
 Synthetic PDF receipts for a manual UI walkthrough are committed in [`demo/receipts`](demo/receipts/README.md). They cover a hotel, train, and taxi flow and contain no personal or client data.
 
 The release flow is:
@@ -73,4 +81,4 @@ make verify
 python scripts/smoke.py
 ```
 
-The implemented system is documented in `docs/architecture/as-built-architecture.md`; it takes precedence over historical target-state plans. See `CONTEXT.md`, `docs/adr/`, and `docs/operations/local-runbook.md` for supporting architecture and operations. The product-team response and deferred boundaries are in `docs/product/ramp-release-response.md`. Assignment gaps and accountable-owner actions are in `docs/submission-readiness-audit.md`. Grading evidence is indexed in `docs/evidence/rubric-matrix.csv`; the decision and AI records are in `docs/decision-log.md` and `docs/ai-collaboration-disclosure.md`.
+The implemented system is documented in `docs/architecture/as-built-architecture.md`; it takes precedence over historical target-state plans. See `CONTEXT.md`, `docs/adr/`, and `docs/operations/local-runbook.md` for supporting architecture and operations. The product-team response and deferred boundaries are in `docs/product/ramp-release-response.md`. Anil's process experience and anonymized employer feedback are indexed in `docs/anil_docs/README.md`. Assignment gaps and accountable-owner actions are in `docs/submission-readiness-audit.md`. Grading evidence is indexed in `docs/evidence/rubric-matrix.csv`; the decision and AI records are in `docs/decision-log.md` and `docs/ai-collaboration-disclosure.md`.
