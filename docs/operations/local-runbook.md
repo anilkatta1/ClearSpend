@@ -19,7 +19,7 @@ Open <http://localhost:5050>. Local desktop mode normally opens directly; if a s
 
 The hostname is `postgres` because pgAdmin runs inside the Compose network. Do not change it to `localhost`; inside the pgAdmin container, `localhost` refers to pgAdmin itself. Port 5050 is bound to `127.0.0.1` so it is reachable only from the host. This administrative UI is for synthetic development data only and must not be exposed publicly.
 
-The stack applies Alembic migrations, applies the Procrastinate schema, seeds synthetic tenants and users, then starts PostgreSQL, MinIO, ClamAV, API, worker, and web services. On first start, ClamAV may need time to download signatures. Open `http://localhost:3000`; API documentation is at `http://localhost:8000/docs`.
+The stack applies Alembic migrations, applies the Procrastinate schema, seeds synthetic tenants and users, then starts PostgreSQL, Silo (MinIO/S3-compatible object storage), ClamAV, API, worker, and web services. On first start, ClamAV may need time to download signatures. Open `http://localhost:3000`; API documentation is at `http://localhost:8000/docs`.
 
 ## Health and diagnosis
 

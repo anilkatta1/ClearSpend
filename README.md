@@ -7,7 +7,7 @@ ClearSpend is a bounded, human-in-the-loop finance-operations assistant for reim
 - Next.js + TypeScript frontend
 - FastAPI + SQLAlchemy backend
 - PostgreSQL for domain state and Procrastinate jobs
-- MinIO private object storage with application-side AES-256-GCM receipt encryption
+- Silo (MinIO/S3-compatible) private object storage with application-side AES-256-GCM receipt encryption
 - ClamAV in an isolated service for fail-closed malware scanning
 - Procrastinate worker containing a bounded LangGraph workflow
 - Fake AI provider by default; optional OpenAI adapter

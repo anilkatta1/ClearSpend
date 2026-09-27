@@ -25,17 +25,17 @@ flowchart LR
     U["Employee / Reviewer / Auditor"] --> W["Next.js web"]
     W --> A["FastAPI modular monolith"]
     A --> P[("PostgreSQL 17\ndomain + audit + outbox + jobs")]
-    A --> Q["Encrypted MinIO quarantine"]
+    A --> Q["Encrypted Silo quarantine"]
     A --> C["ClamAV"]
     C --> A
-    A --> O["Encrypted MinIO clean bucket"]
+    A --> O["Encrypted Silo clean bucket"]
     J["Procrastinate worker"] --> P
     J --> G["Bounded LangGraph"]
     G --> R["Deterministic Python rules"]
     G -. "optional; fake by default" .-> L["AI provider adapter"]
 ```
 
-The API is a modular monolith. PostgreSQL is the consistency boundary. Procrastinate is the PostgreSQL-backed worker; Redis and Kafka are intentionally absent. MinIO is private object storage. ClamAV has no database credentials.
+The API is a modular monolith. PostgreSQL is the consistency boundary. Procrastinate is the PostgreSQL-backed worker; Redis and Kafka are intentionally absent. Silo, a maintained MinIO-compatible fork, is private S3 object storage. ClamAV has no database credentials.
 
 Container architecture:
 
@@ -50,7 +50,7 @@ Container architecture:
 | Durable work | Procrastinate on PostgreSQL | Celery/RabbitMQ for high-throughput messaging; Temporal for long-lived sagas |
 | Workflow | LangGraph state graph | Plain Python state machine if the graph remains this small |
 | Policy engine | Typed Python evaluators + versioned policy rows | OPA when non-developers/cross-service policy distribution requires Rego |
-| Object storage | MinIO + application AES-256-GCM | S3 + KMS envelope encryption for customer-data production |
+| Object storage | Silo (MinIO/S3-compatible) + application AES-256-GCM | Managed S3 + KMS envelope encryption for customer-data production |
 | Malware scan | ClamAV | Managed sandbox/file-scanning service for richer formats |
 | OCR | pypdf + Tesseract | Document AI/Textract after measured accuracy/cost comparison |
 | AI | Provider interface; deterministic fake by default | Local structured-output model through vLLM after evaluation |
@@ -159,4 +159,3 @@ There is no hosted customer environment. TLS/ingress, production identity, secre
 ## 11. Claims boundary
 
 Do not claim bank connectivity, actual reimbursement, ERP acceptance, autonomous finance decisions, validated live-model accuracy, or customer-data production readiness. See [`docs/known-limitations.md`](../known-limitations.md), [`docs/security/threat-model.md`](../security/threat-model.md), and [`docs/adr/`](../adr/).
-
