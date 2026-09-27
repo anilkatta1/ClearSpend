@@ -39,7 +39,7 @@
 
 ## 5. Revenue streams
 
-- **Pilot:** fixed-fee, time-boxed implementation and evaluation engagement, optionally waived for qualified design partners in return for structured feedback.
+- **Pilot:** a fixed-fee, time-boxed implementation and evaluation engagement. The precommitted discovery offer is ₹25,000 INR, paid in advance; it is not waived or counted as demand when free.
 - **Recurring SaaS (hypothesis):** organization platform fee plus a per-active-reviewer or per-submitted-report fee.
 - **Implementation services:** paid policy configuration, historical-data import, SSO/ERP integration, and compliance/security review for larger customers.
 - **Expansion (only after validation):** premium audit retention/reporting, ERP connectors, advanced approval routing, and additional reimbursable-expense categories.
@@ -84,7 +84,7 @@
 
 | Assumption | Evidence today | Pilot test / success signal |
 |---|---|---|
-| A unified evidence packet reduces reviewer effort. | Qualitative support from one finance reviewer; not measured. | Compare reviewer time and external downloads/lookups for comparable claims. |
+| A unified evidence packet reduces reviewer effort. | Qualitative support from an independent finance reviewer ([`INT-02`](../interviews/INT-02-finance-reviewer.md)) and a frequent submitting user ([`INT-01`](../interviews/INT-01-employee-submitter.md)); not measured. | Compare reviewer time and external downloads/lookups for comparable claims. |
 | Finance teams will pay for this narrow workflow without payment or ERP integration. | Not yet validated. | Test paid-pilot conversion and willingness-to-pay interviews with economic buyers. |
 | CSV is sufficient for an initial accounting handoff. | Product decision; no customer validation. | Track export completion, manual CSV rework, and requests for specific integrations. |
 | Human-reviewed, explainable assistance creates more trust than automation-first tools. | Strong design constraint; limited direct feedback. | Measure recommendation use, override reasons, and reviewer trust feedback. |
@@ -92,7 +92,7 @@
 
 ## Evidence status and discovery boundary
 
-This is a **hypothesis canvas**, not a validated business model. Product capabilities described in the README are `CONFIRMED` implementation facts. Interview findings are qualitative `EVIDENCE`; they do not establish frequency, time saved, willingness to pay, or repeatable demand. All market, pricing, segment, channel, and business-value claims below remain `HYPOTHESES` until tested.
+This is a **hypothesis canvas**, not a validated business model. Product capabilities described in the README are `CONFIRMED` implementation facts. The five consented, anonymized interview records in [`docs/interviews`](../interviews/README.md) are qualitative `EVIDENCE`; they do not establish frequency, time saved, willingness to pay, or repeatable demand. All market, pricing, segment, channel, and business-value claims below remain `HYPOTHESES` until tested.
 
 **Stage gate:** Customer Discovery is incomplete. Customer Validation has not started, and broad scaling is prohibited until a fresh, minimally assisted cohort reaches the precommitted validation gate below.
 
@@ -101,7 +101,7 @@ This is a **hypothesis canvas**, not a validated business model. Product capabil
 | Rank | Mechanism | One atomic belief | Evidence today | Consequence if false | Next decision |
 |---|---|---|---|---|---|
 | 1 | Viability | Economic buyers will make a paid commitment for a reimbursement-review workflow before ERP integration or payments exist. | No willingness-to-pay evidence. | High: no sustainable business despite usable product. | Test paid-pilot commitment before building connectors or broadening scope. |
-| 2 | Value | Finance reviewers handling recurring multi-receipt claims experience enough fragmented-evidence work to change their workflow. | One direct qualitative reviewer interview; adjacent workflow interviews. | High: the unified packet is convenience, not a compelling job. | Observe recent claims and their existing workaround with target reviewers. |
+| 2 | Value | Finance reviewers handling recurring multi-receipt claims experience enough fragmented-evidence work to change their workflow. | One direct qualitative reviewer interview ([`INT-02`](../interviews/INT-02-finance-reviewer.md)), corroborated by a frequent submitting user ([`INT-01`](../interviews/INT-01-employee-submitter.md)) and reimbursement-related process discovery ([`INT-05`](../interviews/INT-05-relocation-stakeholder.md)). | High: the unified packet is convenience, not a compelling job. | Observe recent claims and their existing workaround with target reviewers. |
 | 3 | Usability | A reviewer can make a defensible decision from the packet without increasing policy or evidence mistakes. | Product has engineering tests, not independent usability evidence. | High: adoption and trust fail; risk rises. | Run realistic, unassisted review tasks with representative claims. |
 | 4 | Feasibility / institutional | A pilot customer can permit secure receipt processing and provide the policy, access, and accounting workflow required for use. | Technical controls exist; customer security/legal acceptance is untested. | High: pilots cannot launch. | Complete security review and data-processing/access check with each candidate. |
 

@@ -6,16 +6,16 @@
 
 ## Result
 
-The engineering MVP is credible and reproducible, but the assignment is **not yet 100% submission-ready**. The architecture, bounded workflow, controls, tests, and local deployment are substantially implemented. The release blockers are mainly cross-functional: real-user evidence, stakeholder interviews, a final evidence-backed canvas and roadmap, willingness-to-pay results, pitch deck, role-evidence files, community-post records, and actual AI spend.
+The engineering MVP is credible and reproducible, but the assignment is **not yet 100% submission-ready**. The architecture, bounded workflow, controls, tests, and local deployment are substantially implemented. The release blockers are mainly cross-functional: measured real-user outcomes, stakeholder interviews, roadmap, willingness-to-pay results, pitch deck, remaining role-evidence files, community-post records, and actual AI spend. The Business Model Canvas now exists as a hypothesis and test-plan artifact; it is not yet evidence-validated.
 
 ## Rubric coverage
 
 | Rubric area | Status | Evidence present | Still required |
 |---|---|---|---|
 | Engineering/reliability/depth | Strong MVP | As-built architecture, ADRs, Compose, migrations/seed, CI, tests, smoke, threat model, runbook | Capture final clean-run/CI evidence. Browser E2E and production identity/KMS remain honest pilot gaps. |
-| 3–5 real users and decision traces | Partial | Consent-safe consolidated summaries I-01–I-05 and hypothesis → evidence → decision traces are in [`interviews/research-insights.md`](interviews/research-insights.md). I-05 is internal context, not independent validation. | Obtain consent-respecting observations from enough additional relevant users to reach 3–5; include negative findings and measured outcomes. |
+| 3–5 real users and decision traces | Partial | Five consent-safe canonical records are indexed in [`interviews/README.md`](interviews/README.md); three are independent reimbursement-related sources (`INT-01`, `INT-02`, and `INT-05`). Hypothesis → evidence → decision traces are in [`interviews/research-insights.md`](interviews/research-insights.md). | Obtain additional direct reviewer/product-use observations, negative findings, and measured outcomes; do not treat process discovery as willingness-to-pay or quantified validation. |
 | Stakeholder/client interviews | Partial | [`interviews/`](interviews/) contains a consent-safe guide, anonymized summaries, and synthesis; consent to share was received 18 September. | Conduct additional product interviews that probe objections and concrete changes; retain participant-summary confirmation where feasible. |
-| Business Model Canvas | Partial | Initial assumptions in product/pricing plans | Standalone canvas with every required block and evidence IDs; distinguish facts from hypotheses. |
+| Business Model Canvas | Partial | [`product/business-model-canvas.md`](product/business-model-canvas.md) contains all nine blocks, evidence links, ranked beliefs, a value chain, and precommitted tests. | Run the planned behavioral, usability, and paid-commitment tests; update evidence status without relabeling hypotheses as facts. |
 | Pricing/GTM | Partial | Packaging, metric, assumptions, unit-economics model, rejected alternatives | Willingness-to-pay evidence and measured/quoted ranges. |
 | Evidence-backed roadmap | Partial | Draft now/next/later ideas | Standalone roadmap where each item cites evidence/risk/dependency and an exit criterion. |
 | Pitch deck/live narrative | **Blocked** | Outline only | Actual deck: problem, insight, demo, market, model, evidence, competition, roadmap, ask; rehearse live flow. |
@@ -51,9 +51,9 @@ Architecture claims must stay precise:
 ### PM — Diya Mondal and Prashant Chouksey
 
 - Record how shared PM accountability is divided while both remain accountable.
-- Use the consolidated consent-safe records in [`interviews/`](interviews/), then recruit and observe enough additional relevant users to reach 3–5, with consent and no private data in the repository.
+- Use the five canonical consent-safe records in [`interviews/`](interviews/), then recruit direct reviewer/product-use participants for the precommitted tests, with consent and no private data in the repository.
 - Assign evidence IDs; document hypothesis → evidence → decision and contradictions.
-- Complete standalone Business Model Canvas and evidence-sequenced now/next/later roadmap.
+- Execute and update the Business Model Canvas test plan, and complete an evidence-sequenced now/next/later roadmap.
 - Add interview-driven decisions/rejected alternatives to the decision log.
 - Each PM supplies their own role-evidence file and community checkpoint/reply evidence.
 

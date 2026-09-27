@@ -1,8 +1,9 @@
 # ClearSpend pricing and validation plan
 
-**Status:** Working hypothesis, not validated pricing
+**Status:** Historical working hypothesis, not validated pricing. Superseded for the active discovery test by the dated paid-pilot offer in [`product/business-model-canvas.md`](product/business-model-canvas.md).
 
-**Decision date:** 2026-09-17
+**Initial decision date:** 2026-09-17
+**Superseded for active testing:** 2026-09-27
 
 **Audience:** ClearSpend product, sales, and finance owners
 
@@ -52,7 +53,7 @@ Passing this gate supports offering the paid pilot. It does not validate the pri
 
 ## Paid design-partner pilot
 
-**Price:** ₹2,499 once for 30 days.
+**Historical proposed price:** ₹2,499 once for 30 days. This is not the active offer and has no payment evidence. The active precommitted discovery offer is ₹25,000 INR, paid in advance, as defined in the [Business Model Canvas](product/business-model-canvas.md#precommitted-discovery-tests).
 
 The package includes:
 
@@ -82,9 +83,7 @@ an automatic charge or service interruption.
 
 ## Provisional conversion offer
 
-If the pilot passes its value and safety gates, the working renewal hypothesis is
-
-**₹2,999 per company per month for up to 100 unique claims**. It carries the same account
+The former working renewal hypothesis was **₹2,999 per company per month for up to 100 unique claims**. It is deferred until the active paid-pilot test produces evidence; it is not a current offer. It carries the same account
 
 limits and product boundaries as the pilot.
 
