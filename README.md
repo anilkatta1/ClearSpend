@@ -31,6 +31,40 @@ The release flow is:
 4. A reviewer sees all receipt lines and pinned policy citations, then makes one decision for the report. A request for a missed receipt appends only the new evidence; explicit replacement creates a new complete bundle revision. Prior evidence remains visible to auditors.
 5. Approval enters `READY_TO_EXPORT`; a reviewer confirms account coding and downloads a recorded CSV containing one accounting line per current receipt.
 
+## Interface
+
+Screens from a local run at <http://localhost:3000>, using the synthetic receipts in [`demo/receipts`](demo/receipts/README.md).
+
+**Submit one trip as one approval.** The employee picks a shared category and business purpose, then uploads up to 20 JPEG, PNG, or PDF receipts.
+
+![Expense report form before any receipts are added](demo/images/assets1.png)
+
+**Verify each line.** Clean receipts appear with a preview and extracted merchant, amount, and incurred date. The employee confirms those fields; the server derives the report total.
+
+![Hotel and taxi receipts after a clean scan, ready to verify](demo/images/assets2.png)
+
+![Three verified travel receipts totaling ₹3,250, ready to submit for one assessment](demo/images/assets3.png)
+
+**Review queue.** A reviewer sees each report's lines, evidence checks, and a recommendation that is not a decision. Awaiting-review and already-exported reports stay side by side.
+
+![Review queue with one report awaiting review and one already exported](demo/images/assets4.png)
+
+**Evidence.** Deterministic checks cover the receipt, amount limit, category, purpose, submission window, and per-line receipt match. Bounded AI assistance is limited to purpose plausibility against the selected policy.
+
+![Passing deterministic checks and the AI purpose-plausibility result for both reports](demo/images/assets5.png)
+
+**One decision for the report.** The reviewer approves, rejects, or requests more information. The pinned reimbursement rules stay on the report. An exported report shows the recorded handoff instead of decision buttons.
+
+![Approve, reject, or request info on the open report; the other report is already exported](demo/images/assets6.png)
+
+**Accounting handoff.** After approval, a reviewer confirms coding and downloads an accountant-ready CSV. The export does not move money.
+
+![Confirm coding and export CSV on an approved report](demo/images/assets7.png)
+
+**What the system can prove.** Operating signals summarize submissions, decisions, and exports. The hash-linked event trail records each workflow event and shows whether the chain verifies.
+
+![Operating signals and the start of the hash-linked audit trail](demo/images/assets8.png)
+
 ## Verify
 
 ```bash
