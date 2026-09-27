@@ -17,6 +17,6 @@ This directory is the canonical, consolidated location for interview-derived evi
 | I-02 | Operations leader | Internal operating expenses | Process-discovery summary |
 | I-03 | IT procurement leader | IT asset procure-to-pay | Process-discovery summary |
 | I-04 | Relocating employee / HR-process stakeholder | Relocation reimbursement | Process-discovery summary |
-| I-05 | Product-team member | Reimbursement workflow experience | Internal context only; not independent validation |
+| I-05 | Frequent employee reimbursement submitter | Reimbursement workflow experience and ClearSpend feedback | Independent, consented qualitative product-feedback summary |
 
 Use [`research-insights.md`](research-insights.md) for the cross-interview synthesis, limitations, and resulting product decisions. [`interview-guide.md`](interview-guide.md) records the semi-structured finance discussion topics.

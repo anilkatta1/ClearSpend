@@ -36,8 +36,10 @@ The participant described relocation support that begins with an approved cap du
 
 **Limit:** the notes describe a workflow rather than measured outcomes or a product evaluation.
 
-## I-05 — Product-team reimbursement experience (context only)
+## I-05 — Frequent employee reimbursement submitter: workflow and product feedback
 
-A product-team member described repeated receipt checks, fragmented policy and budget evidence, and the value of a consolidated evidence packet. This account informed the initial problem framing and expected success measures.
+The participant regularly submits receipt-based reimbursement claims through an existing multi-step process. They described repeated receipt downloads and checks, fragmented policy, budget, and approval context, delays while evidence passes between approvers, and difficulty reconstructing a decision later. They considered a single packet containing receipt previews, confirmed fields, policy results, explanations, and decision history valuable. They also valued retaining human review and continuing the same claim when a reviewer requests missing evidence rather than restarting it.
 
-**Limit:** this is internal first-person context, not independent customer validation and must not be counted toward the 3–5 relevant-user requirement.
+**Product implications:** retain unified evidence, inline receipt preview, deterministic line matching, visible policy context, human decision ownership, append/resubmit workflow, and auditable history.
+
+**Limit:** this is consented, independent qualitative feedback from one frequent submitting user. It supports workflow relevance and product direction; it does not measure reviewer time saved, willingness to pay, or production readiness.
