@@ -19,6 +19,7 @@ coverage/
 *.tsbuildinfo
 playwright-report/
 test-results/
+dist/
 
 # Local infrastructure and secrets
 *.log
