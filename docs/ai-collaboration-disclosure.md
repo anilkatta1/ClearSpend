@@ -21,7 +21,7 @@ The design rejects autonomous AI decisions, AI write tools, model-only policy en
 ## Spend
 
 - Product runtime AI spend during the verified demo: **USD 0.00** (`AI_PROVIDER=fake`).
-- Codex development spend: **not exposed in this environment; record the billed amount from the account usage report before submission**.
+- Diya's Codex development spend: **USD 16.7903** (reported account-usage total; details in [`docs/evidence/diya-ai-spend-log.md`](evidence/diya-ai-spend-log.md)).
 - Local compute and engineering time are not included in the USD figure and must not be represented as zero total cost.
 
 Before final submission, add the actual model/tool identifiers, available token counts, and billed AI amount from the team account.

@@ -28,6 +28,9 @@ test-results/
 *.tfstate
 *.tfstate.*
 
+# Local deck-generation dependencies
+pitch-deck/.build/
+
 # IDE
 .idea/
 .vscode/

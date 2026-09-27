@@ -240,8 +240,8 @@
 </tr>
 <tr>
 <td>H6</td>
-<td>₹3,000–₹10,000/month is plausible.</td>
-<td>Direct buyer pricing conversations.</td>
+<td>A qualified buyer will pay ₹25,000 INR in advance for a 30-calendar-day design-partner pilot before ERP integration or payment execution exists.</td>
+<td>Signed paid-pilot agreement, purchase order, or payment from a named budget decider.</td>
 <td>Packaging and pricing.</td>
 </tr>
 </tbody>
@@ -1290,20 +1290,21 @@ Makefile
 </tr>
 <tr>
 <td>Revenue</td>
-<td>Organization subscription with included assessments; usage tier; optional later onboarding fee.</td>
+<td>Paid design-partner pilot first; future recurring SaaS, implementation services, and premium add-ons remain unvalidated.</td>
 </tr>
 </tbody>
 </table>
-<p>Key commercial hypotheses: value tracks claim volume and time saved; account/usage pricing is preferable to seats; acceptable setup is under one hour; accountant distribution is later, not MVP-critical.</p>
+<p>Key commercial hypotheses: value tracks reviewer effort saved, audit/rework risk, and workflow fragmentation; the active paid-pilot offer tests budget commitment before ClearSpend publishes recurring SaaS pricing; accountant distribution is later, not MVP-critical.</p>
 <hr />
 <h2 id="12-pricing-hypothesis">12. Pricing hypothesis<a class="headerlink" href="#12-pricing-hypothesis" title="Permanent link">&para;</a></h2>
-<h3 id="test-packages">Test packages<a class="headerlink" href="#test-packages" title="Permanent link">&para;</a></h3>
-<p><strong>Pilot — ₹4,999/company/month:</strong> 100 assessments, 5 reviewers/admins, unlimited submitters, versioned policy, citations, approval trail, basic export, email support.</p>
-<p><strong>Team — ₹9,999/company/month:</strong> 500 assessments, 15 reviewers/admins, unlimited submitters, analytics, extended retention, priority support, future integration allowance.</p>
-<p>These are research starting points, not validated prices.</p>
+<p>The canonical pricing and validation detail is in <a href="docs/pricing.md">docs/pricing.md</a>.</p>
+<h3 id="evaluation-and-test-package">Evaluation and test package<a class="headerlink" href="#evaluation-and-test-package" title="Permanent link">&para;</a></h3>
+<p><strong>Free guided evaluation:</strong> a facilitated workflow session using synthetic or customer-created de-identified claims. This tests usability and trust; it is not a free production trial and does not count as willingness-to-pay evidence.</p>
+<p><strong>Paid design-partner pilot — ₹25,000 INR paid in advance for 30 calendar days:</strong> one organization, one configured reimbursement-policy workflow, up to 10 active reviewers, unlimited employee submitters for the pilot workflow, assisted setup, receipt evidence capture and preview, deterministic checks, bounded AI assistance, policy citations, human review, audit history, CSV accounting handoff, email support, and one results review.</p>
+<p><strong>Future recurring pricing:</strong> unresolved. Do not publish recurring prices until the paid pilot produces evidence about value, usage, support burden, and buyer preference.</p>
 <h3 id="metric-and-evidence">Metric and evidence<a class="headerlink" href="#metric-and-evidence" title="Permanent link">&para;</a></h3>
-<p>Use a base subscription with included assessment volume: it aligns with workload and variable cost, stays predictable, and does not penalize submitter adoption.</p>
-<p>Ask economic buyers about claim volume, reviewer hours/cost, errors/delay, existing spend, and prices that feel inexpensive/reasonable/expensive/too expensive. Ask for a conditional 30-day pilot commitment. Compliments are not WTP evidence; a pilot, buyer introduction, safe test cases, or written intent is stronger.</p>
+<p>Use the paid pilot as a fixed-fee discovery offer, not a metered production plan. Measure usage internally for future pricing and unit economics.</p>
+<p>Ask economic buyers about recent claim volume, reviewer effort and loaded cost, errors, delays, existing spend, and actual purchase authority. Present the exact ₹25,000 offer without hidden customization. The precommitted gate is at least two paid commitments from five qualified economic buyers; one is inconclusive and zero fails the current offer. Compliments, survey intent, and acceptance of the free evaluation are not WTP evidence.</p>
 <h3 id="unit-economics">Unit economics<a class="headerlink" href="#unit-economics" title="Permanent link">&para;</a></h3>
 <pre><code class="language-text">monthly revenue
 - AI cost per claim × claim volume
@@ -1314,7 +1315,7 @@ Makefile
 </code></pre>
 <p>Measure tokens/calls and show low/base/high scenarios. Do not invent margins.</p>
 <h3 id="rejected-alternative">Rejected alternative<a class="headerlink" href="#rejected-alternative" title="Permanent link">&para;</a></h3>
-<p><strong>Per-seat pricing</strong> is rejected initially because occasional approvers and submitters increase adoption, while workload and direct variable cost follow assessments more closely. Revisit if buyer evidence shows finance-seat budgeting is strongly preferred.</p>
+<p><strong>Published recurring SaaS pricing</strong> is rejected initially because the team does not yet have evidence about measured value, usage, buyer preference, or cost-to-serve. Per-seat-only pricing, unattended free trial, and outcome pricing remain rejected until buyer or operational evidence changes the underlying constraints.</p>
 <hr />
 <h2 id="13-evidence-gated-roadmap">13. Evidence-gated roadmap<a class="headerlink" href="#13-evidence-gated-roadmap" title="Permanent link">&para;</a></h2>
 <h3 id="now">Now<a class="headerlink" href="#now" title="Permanent link">&para;</a></h3>
@@ -1383,7 +1384,7 @@ Makefile
 <h2 id="15-decision-log-and-ai-disclosure">15. Decision log and AI disclosure<a class="headerlink" href="#15-decision-log-and-ai-disclosure" title="Permanent link">&para;</a></h2>
 <h3 id="decision-fields">Decision fields<a class="headerlink" href="#decision-fields" title="Permanent link">&para;</a></h3>
 <p>ID/date/owner, decision, context, evidence, alternatives, consequences, and revisit trigger.</p>
-<p>Seed decisions for the bounded workflow, Indian SMB wedge, Next.js/FastAPI monorepo, Procrastinate without Redis/Kafka, bounded LangGraph workflow, custom Python rule evaluator instead of OPA, human final authority, hybrid assessment, PostgreSQL search before vectors, fake-AI mode, usage-banded subscription, and rejected seat pricing.</p>
+<p>Seed decisions for the bounded workflow, Indian SMB wedge, Next.js/FastAPI monorepo, Procrastinate without Redis/Kafka, bounded LangGraph workflow, custom Python rule evaluator instead of OPA, human final authority, hybrid assessment, PostgreSQL search before vectors, fake-AI mode, fixed-fee paid discovery before recurring pricing, and rejected premature SaaS pricing.</p>
 <h3 id="ai-collaboration-disclosure">AI-collaboration disclosure<a class="headerlink" href="#ai-collaboration-disclosure" title="Permanent link">&para;</a></h3>
 <p>Record tool/model/version, purpose, input-data classification/redaction, output/artifact, human verification, limitations/corrections, usage, and cost—including zero if true.</p>
 <table>

@@ -5,7 +5,7 @@ Build a credible, original product in the category of Ramp (AI features). Treat 
 
 Starting challenge: Build a trustworthy finance-operations assistant for a bounded spend or expense workflow with policy, approvals, audit trails, and explanations.
 
-By Friday, September 18, 2026, end of day IST, deliver a working product and evidence that a real customer should care.
+By Sunday, September 27, 2026, end of day IST, deliver a working product and evidence that a real customer should care.
 
 Team and accountable roles
 Engineer — Anil Katta: owns architecture, implementation, reliability, tests, deployment, and telemetry.
