@@ -147,6 +147,26 @@ Start by validating the customer's system of record and required accounting fiel
 
 ## 6. Evidence and validation boundary
 
+**Submission status: incomplete.** Implemented application features do not close the customer-validation and business-artifact requirements below. These gaps remain open, consistent with the [submission-readiness audit](../submission-readiness-audit.md).
+
+### Customer evidence still to collect
+
+- **3–5 independent relevant users:** Collect consent-respecting evidence from distinct people who submit, review, or administer reimbursements. For each participant, record an anonymized ID, relevant role, date, current process, observations, objections, and resulting product decision. Multiple documents about one person do not count as multiple users. The interview files in this folder alone do not establish that the threshold has been met.
+- **Quantified baseline and time saved:** Observe comparable tasks in the existing process and ClearSpend. Record task boundaries, receipt count, active handling time, elapsed waiting time separately, errors, correction cycles, sample size, and measurement method. Calculate time saved from the recorded baseline and app measurements; include unsuccessful runs and avoid generalizing from synthetic demonstrations. Current operating metrics alone do not demonstrate customer time savings.
+- **Willingness to pay:** Gather direct responses from relevant buyers or budget owners about a specific package, price, and billing period. Record buyer role, purchasing authority, quoted range or response, objections, conditions, and evidence ID. Distinguish stated interest, stated willingness to pay, and an actual paid commitment. Proposed prices and internal pricing assumptions are not buyer evidence.
+
+### Final business artifacts still required
+
+- **Standalone evidence-backed Business Model Canvas:** Complete customer segments, value propositions, channels, customer relationships, revenue streams, key resources, key activities, key partners, and cost structure. Link claims to evidence IDs and label unsupported assumptions and planned validation. Product descriptions and pricing notes are inputs, not a completed canvas.
+- **Final now/next/later roadmap:** Produce a standalone, agreed roadmap with a user problem, supporting evidence or explicit hypothesis, priority rationale, owner, dependencies/risks, and exit criterion for each item. Distinguish delivered functionality from planned work. The P0–P3 proposals above are planning inputs, not the final evidence-backed roadmap.
+- **Pitch-deck evidence:** Produce the actual deck covering the problem, user insight, product/demo, market, business model, validation, competition, roadmap, and ask. Link factual claims to inspectable sources; label assumptions. Retain the final deck and demo/rehearsal evidence. An outline or intended slide list does not satisfy this requirement.
+
+### Ownership and closure
+
+Following the existing readiness audit, the PMs own user-evidence synthesis, the canvas, and roadmap; Sales owns willingness-to-pay research and the pitch narrative, with Engineering supporting demo and implementation evidence. Record the individual owner and target date for each deliverable when the team agrees them.
+
+Keep each item open until its actual evidence or final artifact is linked and reviewed. Do not substitute fabricated interview results, estimated savings, assumed purchase intent, or empty templates. These are specific remaining gaps, not an exhaustive replacement for the wider submission-readiness checklist.
+
 This document was updated through repository review; application tests were not rerun for this documentation change. Existing verification covers backend tests, frontend checks, and an API/worker smoke journey. Browser-driven coverage remains a gap.
 
 See the [verification guide](../engineering/verification.md), [smoke journey](../../scripts/smoke.py), [release response](../product/ramp-release-response.md), and [known limitations](../known-limitations.md). Mark an enhancement as implemented only when code, verification evidence, and documentation support it.
