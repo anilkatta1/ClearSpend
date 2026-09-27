@@ -18,6 +18,8 @@
 
 **Current conclusion:** three independent reimbursement-relevant qualitative records exist. The stronger requirement—observing representative users completing ClearSpend tasks and recording outcomes—remains unmet. The evidence must not be described as proof of time saved, recommendation accuracy, willingness to pay, or production readiness.
 
+The assessor-facing synthesis and six evidence-to-decision traces are in [`real-user-evidence-report.md`](real-user-evidence-report.md). Use [`direct-product-observation-kit.md`](direct-product-observation-kit.md) for new behavioral sessions; do not count its blank forms as collected evidence.
+
 ## 2. Quantified baseline and time-saved evidence
 
 ### Measurement protocol
@@ -81,4 +83,3 @@ This evidence area is complete only when:
 - negative findings and errors are retained;
 - a concrete priced offer has received explicit buyer responses;
 - resulting product, roadmap or pricing decisions cite the evidence IDs above.
-
