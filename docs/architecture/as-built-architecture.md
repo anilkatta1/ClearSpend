@@ -37,6 +37,9 @@ flowchart LR
 
 The API is a modular monolith. PostgreSQL is the consistency boundary. Procrastinate is the PostgreSQL-backed worker; Redis and Kafka are intentionally absent. MinIO is private object storage. ClamAV has no database credentials.
 
+Container architecture:
+
+![alt text](image.png)
 ## 3. Technology choices and alternatives
 
 | Concern | Implemented | Open-source/portable alternative and selection trigger |
