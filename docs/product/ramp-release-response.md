@@ -21,6 +21,17 @@ Date: 2026-09-15
 | Concurrent audit allocation | Organization row is locked before sequence allocation | Implemented |
 | Risk-path verification | Unit/property checks, PostgreSQL export-failure/retry and unpublished-outbox recovery tests, plus automated live two-receipt scan → aggregate/per-line assessment → information request → append only a missed third receipt → immutable bundle revision → reassessment → EICAR quarantine → cross-tenant denial → decision → three-line CSV → concurrent audit smoke | Implemented |
 
+## Delivered outcomes and their limits
+
+Prashant's implementation-to-research mapping is consolidated here; individual attribution is retained in [his role evidence](../../ROLE_EVIDENCE_Prashant_Chouksey.md). The [as-built architecture](../architecture/as-built-architecture.md), source and tests remain authoritative for implementation claims.
+
+- **Employees:** submit 1–20 same-category INR receipts, verify extracted fields, and append missing evidence or replace a bundle through a new revision. The supported outcome is a structured submission and correction flow; reduced effort and fewer follow-ups remain hypotheses.
+- **Reviewers:** inspect line evidence, deterministic checks, policy citations and advisory recommendations, then approve, reject or request information for the report. This does not guarantee receipt authenticity or eliminate fraud; fake AI is the default and live-model quality is unvalidated.
+- **Accounting:** confirm coding after approval and generate one CSV line per current receipt. Export generation is distinct from downstream acceptance, reconciliation and payment.
+- **Auditors and operations:** inspect receipt revisions, assessment inputs, decisions and export history alongside hash-linked audit events. Encryption, scanning, role/tenant checks, durable jobs and retry controls support the synthetic MVP; they do not certify compliance or customer-data readiness.
+
+The [demo narrative](../../demo/DEMO_NARRATIVE.md) demonstrates the concrete journey: submit hotel and transit receipts, request and append a missed receipt, reassess, record a human decision, and produce a three-line CSV while retaining earlier evidence. Research mappings for operations, relocation and procurement live in [the canonical synthesis](../interviews/research-insights.md#prashants-research-to-product-recommendations).
+
 ## Explicitly deferred
 
 - Money movement, reimbursement payout, cards, AP, procurement, and general finance agents.

@@ -6,6 +6,8 @@
 
 Diya's PM scope is problem framing, business model, user research, decision logging, and roadmap work, shared with the other PM as stated in [`docs/PROBLEM-STATEMENT.md`](docs/PROBLEM-STATEMENT.md).
 
+The [participant-confirmed PM allocation](ROLE_EVIDENCE_Prashant_Chouksey.md#agreement-with-diya) records Prashant as primary owner of interviews and Diya as primary owner of pricing and the roadmap, with both sharing findings. It preserves Prashant's confirmation of their existing agreement; the original date and publication in the team discussion remain unverified. It does not assign exclusive Business Model Canvas ownership.
+
 | Area | Delivered contribution | Inspectable evidence |
 |---|---|---|
 | Problem framing and product scope | Defined ClearSpend as a narrow, trustworthy reimbursement-review workflow rather than a clone of Ramp or a broad spend-management platform. Identified evidence gaps, product metrics, validation gates, and explicit scope deferrals. | [`docs/product/ramp-alignment-assessment.md`](docs/product/ramp-alignment-assessment.md), [`docs/clearspend_ramp_alignment_review.md`](docs/clearspend_ramp_alignment_review.md) |

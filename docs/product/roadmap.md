@@ -45,6 +45,17 @@
 | Add reimbursement variants such as mileage, multi-currency, GST evidence, or entity/cost-center dimensions. | Observed claim mix demonstrates that a specific missing variant excludes the beachhead. | Broader coverage without weakening the current decision/audit boundary. |
 | Add configurable approval routing or budget context. | Multiple design partners show that the present single reviewer decision cannot fit their workflow—particularly logistics/relocation cases requiring operations or budget-owner review—and commit to the capability. | More organizations can use the same trusted review loop. |
 
+## Research-derived enhancement details
+
+The following details consolidate Prashant's existing improvement proposals into this roadmap. They supplement the gates above; they are not a second delivery schedule or evidence of completed work. The [research synthesis](../interviews/research-insights.md#prashants-research-to-product-recommendations) links them to `INT-03`–`INT-05`.
+
+- **Before customer-data use:** retain the identity, tenant-isolation, managed-key rotation, retention/deletion, TLS, scanner monitoring, backup/restore, alert ownership and rollback gates in Next. Record recovery and key-rotation exercises rather than treating configuration alone as acceptance.
+- **Improve the current journey:** benchmark OCR against an authorized representative corpus and evaluate bounded OCR for scanned PDFs, preserving employee confirmation and scan-before-parse controls. Add browser tests for upload, correction, review, resubmission, export, permissions and failures. Validate queue filtering and cursor pagination with concurrent inserts and bounded responses. Measure submission effort, handling time, correction cycles and accountant CSV usability with sample sizes and failed tasks included.
+- **Validate workflow extensions:** finance must confirm project/cost-center dimensions before they become new report-level controls. Staged approvals need explicit delegation, escalation, separation of duties and audited transitions. Relocation needs validated entitlements, vendor eligibility and supporting approval evidence. Mixed-category reports and partial decisions require defined policy/export semantics. Notifications and reminders need deduplication, recipient authorization and limited sensitive content. Promote any of these only when observed friction and a committed evaluation justify it.
+- **Accounting integration:** choose the actual receiving system and required fields from research. A connector must distinguish file generation, delivery and confirmed acceptance, with idempotent delivery, acknowledgements, retries and reconciliation. No ERP vendor is currently selected or integrated.
+
+An integrated ERP transition remains a separately scoped discovery proposal. Budget ledgers, procurement/quotation/PO flows, asset inventory/depreciation/retirement, and financial data migration are not ClearSpend capabilities or commitments. Any future proposal would need system-of-record validation, mapping and cleanup, access design, financial validation and a tested cutover plan. Payment execution remains outside this product.
+
 ## Explicitly not on this roadmap
 
 Cards, banking, reimbursements/payouts, AP, procurement, treasury, general finance chatbots, autonomous approvals, and agent payments remain deferred. They introduce different regulated workflows and should not be reconsidered unless research shows the reimbursement-review wedge is validated and a specific adjacent job is the binding adoption constraint.
@@ -52,6 +63,8 @@ Cards, banking, reimbursements/payouts, AP, procurement, treasury, general finan
 ## Ownership and review cadence
 
 The PM owners maintain the evidence ledger and make keep/change/reject decisions after each gate. Engineering owns release, security, operational, and measurement readiness. Sales owns qualified buyer recruitment and records the exact commercial offer and outcome. Review this roadmap after each test window; changes must cite new evidence in the decision log.
+
+Within shared PM accountability, Prashant owns interviews and Diya owns pricing and this roadmap; both share findings. This allocation is preserved from [Prashant's participant-confirmed responsibility record](../../ROLE_EVIDENCE_Prashant_Chouksey.md#agreement-with-diya). It does not establish the original agreement date, community publication, or an exclusive Business Model Canvas owner. Diya's PM pricing ownership complements Niraj's Sales responsibility for buyer recruitment, exact-price conversations and commercial evidence.
 
 ## Source artifacts
 

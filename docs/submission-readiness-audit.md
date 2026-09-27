@@ -1,12 +1,13 @@
 # Assignment submission-readiness audit
 
 **Audit date:** 2026-09-21  
+**Documentation consolidation:** 2026-09-27; PM attribution, canonical links and artifact status updated. No new customer-validation or live-run result is implied.
 **Scope:** all stated requirements reviewed; schedule dates intentionally excluded from acceptance.  
 **Evidence rule:** a plan, outline, or empty template is not counted as completed customer evidence.
 
 ## Result
 
-The engineering MVP is credible and reproducible, but the assignment is **not yet 100% submission-ready**. The architecture, bounded workflow, controls, tests, and local deployment are substantially implemented. The release blockers are mainly cross-functional: measured real-user outcomes, stakeholder interviews, roadmap, willingness-to-pay results, pitch deck, remaining role-evidence files, community-post records, and actual AI spend. The Business Model Canvas now exists as a hypothesis and test-plan artifact; it is not yet evidence-validated.
+The engineering MVP is substantial, but the assignment is **not yet 100% submission-ready**. The architecture, bounded workflow, controls, tests, and local deployment configuration are implemented; final clean-run evidence still needs to be archived. The Business Model Canvas, now/next/later roadmap, pitch deck and both PM role-evidence records exist. Remaining gaps include direct product-use observations, measured outcomes, willingness-to-pay results, roadmap gate execution, pitch rehearsal, Engineering/Sales role records, community-post evidence and whole-team AI spend. Existing interview summaries are qualitative evidence, and the Canvas remains a hypothesis and test-plan artifact.
 
 ## Rubric coverage
 
@@ -19,7 +20,7 @@ The engineering MVP is credible and reproducible, but the assignment is **not ye
 | Pricing/GTM | Partial | Packaging, metric, assumptions, unit-economics model, rejected alternatives | Willingness-to-pay evidence and measured/quoted ranges. |
 | Evidence-backed roadmap | Partial | [`product/roadmap.md`](product/roadmap.md) is a standalone now/next/later roadmap sequenced by discovery, commercial, security, and operational gates, each with dependencies and exit criteria. | Execute the gates and update the roadmap with observed evidence; do not treat planned tests as validation. |
 | Pitch deck/live narrative | Partial | 11-slide [`pitch-deck/ClearSpend_Pitch_Deck.pdf`](../pitch-deck/ClearSpend_Pitch_Deck.pdf) and `.pptx`, deck source/readme, screenshots, and [`demo/DEMO_NARRATIVE.md`](../demo/DEMO_NARRATIVE.md). | Rehearse and record a live or fallback walkthrough; preserve the evidence/hypothesis labels in delivery. |
-| Individual ownership | Partial | [`ROLE_EVIDENCE_Diya_Mondal.md`](../ROLE_EVIDENCE_Diya_Mondal.md) identifies Diya's PM outputs, decisions, and gaps. | Add one role-evidence file for each other learner and record the agreed division of shared PM responsibilities. |
+| Individual ownership | Partial | [Diya's role record](../ROLE_EVIDENCE_Diya_Mondal.md) and [Prashant's role record](../ROLE_EVIDENCE_Prashant_Chouksey.md) identify PM contributions and preserve Prashant's confirmation of the responsibility split. | Add Engineering/Sales role records and actual community evidence. The original PM agreement date and team-discussion publication remain unverified. |
 | Community discussion | Partial external evidence | The external LearnHouse Team 7 thread contains early problem-hypothesis/exception discussion, Anil's role/hypothesis posts, and Diya's alignment post referring to `product/ramp-alignment-assessment.md`. | Preserve direct links or permitted screenshots in the final ZIP. The supplied thread does not yet visibly demonstrate three qualifying weekly checkpoints and constructive replies per learner; do not backdate or fabricate them. |
 | Decision log/AI disclosure | Partial | Architecture decisions and disclosure exist | Interview-driven decisions/rejections and actual total AI spend; “not exposed” is not a final total. |
 
@@ -50,12 +51,12 @@ Architecture claims must stay precise:
 
 ### PM — Diya Mondal and Prashant Chouksey
 
-- Record how shared PM accountability is divided while both remain accountable.
+- Preserve the recorded split: Prashant owns interviews; Diya owns pricing and the roadmap; both share findings and retain PM accountability. Link actual team-discussion evidence when available; the original agreement date is not established by the current record.
 - Use the five canonical consent-safe records in [`interviews/`](interviews/), then recruit direct reviewer/product-use participants for the precommitted tests, with consent and no private data in the repository.
 - Assign evidence IDs; document hypothesis → evidence → decision and contradictions.
-- Execute and update the Business Model Canvas test plan, and complete an evidence-sequenced now/next/later roadmap.
+- Execute and update the Business Model Canvas test plan and the existing evidence-sequenced now/next/later roadmap. Do not treat the existence of these artifacts as successful validation.
 - Add interview-driven decisions/rejected alternatives to the decision log.
-- Each PM supplies their own role-evidence file and community checkpoint/reply evidence.
+- Maintain both PM role-evidence files and add actual community checkpoint/reply evidence. Record task boundaries, baseline and app handling times, waiting separately, receipt count, errors, corrections and unsuccessful observations before claiming savings.
 
 ### Sales — Niraj Gupta
 

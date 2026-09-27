@@ -20,3 +20,9 @@ This directory is the canonical, consent-safe location for interview-derived evi
 | [`INT-05`](INT-05-relocation-stakeholder.md) | Relocation reimbursement stakeholder | Relocation reimbursement | Independent process-discovery summary |
 
 [`interview-summaries.md`](interview-summaries.md) maps the historical `I-01`–`I-05` references used in existing research to these canonical records. Use [`research-insights.md`](research-insights.md) for the cross-interview synthesis, limitations, and resulting product decisions. [`interview-guide.md`](interview-guide.md) records the semi-structured finance discussion topics.
+
+## Research ownership and attribution
+
+The [PM responsibility record](../../ROLE_EVIDENCE_Prashant_Chouksey.md#agreement-with-diya) preserves Prashant's confirmation that he owns interviews and Diya owns pricing and the roadmap, with both sharing findings. The original agreement date and community publication remain unverified. Sales retains its stakeholder/client interview and commercial-research accountability under the assignment.
+
+Prashant contributed the source discovery material represented by `INT-03`, `INT-04` and `INT-05`; Diya consolidated the canonical consent-safe records and synthesis. These are complementary contributions to the same evidence, not separate participants. Interview-document preparation is disclosed in the [shared AI record](../ai-collaboration-disclosure.md#prashant-chouksey--interview-documentation).

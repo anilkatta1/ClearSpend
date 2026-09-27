@@ -31,6 +31,16 @@
 | Relocation reimbursement (I-04) | Eligibility/offer-linked entitlements, approved-vendor checks, pre-approval evidence, and HR/operations/finance routing. | The generic reimbursement flow does not verify relocation eligibility, validate vendors, prove payment, or disburse reimbursements. |
 | IT procurement (I-03) | A separately scoped requisition, quotation, PO/invoice/delivery matching, asset-tracking, and debit/credit-note module. | These are reusable evidence and audit-control patterns, not implemented ClearSpend procurement features. |
 
+## Prashant's research-to-product recommendations
+
+Prashant contributed the operations, IT procurement and relocation discovery material and the mapping below; see [his role evidence](../../ROLE_EVIDENCE_Prashant_Chouksey.md). Canonical records use anonymized IDs. These are recommendations derived from existing research, not additional interviews or proof that each interview caused a shipped change.
+
+- **Operations — [INT-03](INT-03-head-of-operations.md):** spreadsheet budgets, ticket-based requisitions, project-cost mapping and multi-role sign-off suggest validating project/cost-center dimensions, staged approvals and variance review. The current product supplies receipt evidence, policy checks, a human decision and CSV coding; its amount limits are not a cumulative budget ledger and it does not calculate project profitability or budget variance.
+- **Relocation — [INT-05](INT-05-relocation-stakeholder.md):** onboarding caps, approved vendors, itemized invoices, proof of payment and multi-role review suggest validating entitlement, vendor eligibility and supporting pre-approval evidence separately. Generic report submission and corrections cover shared steps, but ClearSpend does not implement relocation eligibility, HR/operations routing, payment verification or disbursement.
+- **IT procurement — [INT-04](INT-04-it-head.md):** purchase requests, quotations, purchase orders, delivery inspection and debit/credit-note reconciliation require a separately scoped workflow. Receipt security, human review and audit history are reusable control patterns; they do not establish a delivered procurement or asset-management module.
+
+The [roadmap](../product/roadmap.md#research-derived-enhancement-details) carries the evidence gates for these proposals. Broader ERP transition remains outside the committed reimbursement roadmap. Generalized canonical summaries take precedence over identifying details or organization-specific numerical thresholds in earlier drafts.
+
 ## What this does *not* establish
 
 - It does not establish a quantified time saving, willingness to pay, production readiness, or an optimal approval hierarchy.
@@ -43,3 +53,5 @@
 1. Test active reviewer time, external lookups/downloads, information-request rate, and time to final decision with at least three relevant independent users.
 2. Ask finance, budget owners, and auditors about exceptions, approval-chain configuration, budget-system evidence, retention/export needs, security concerns, and willingness to pay.
 3. Record each result with an evidence ID, anonymized role, consent status, contradiction or objection, and the resulting keep/change/reject decision.
+4. For comparable baseline and ClearSpend tasks, record receipt count, task boundaries, active handling time separately from elapsed waiting, errors, correction cycles, sample size and unsuccessful runs. Synthetic operating metrics alone do not demonstrate customer savings.
+5. Maintain a distinct participant roster with dates, relevant roles, consent status and observations. Several documents about one person count as one participant. Pricing follow-ups must distinguish stated interest, responses to an exact offer and an actual paid commitment.
