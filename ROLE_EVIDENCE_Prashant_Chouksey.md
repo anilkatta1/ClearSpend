@@ -11,7 +11,7 @@ Prashant confirmed in the assessment discussion that he and Diya had already agr
 Prashant clarified the agreed allocation in this assessment discussion:
 
 - **Prashant:** owns interviews.
-- **Diya:** owns pricing and the roadmap.
+- **Diya:**  the roadmap and deliveries.
 - **Collaboration:** both PMs share details and findings with each other. Prashant's interview findings and improvement proposals therefore contribute to Diya's pricing and roadmap work without transferring primary ownership of those deliverables to him.
 
 This is a participant-confirmed record of the existing agreement, documented on 27 September 2026. It does not establish when the original agreement was made or replace evidence of publication in the team's community discussion. Ownership of the Business Model Canvas was not specified in this clarification and is not assigned here.
