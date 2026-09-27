@@ -18,11 +18,10 @@ This directory records how customer and stakeholder evidence informs ClearSpend'
 
 ## Evidence status
 
-- Five role-based interview records exist, but only I-01 contains independent product feedback.
-- I-02 through I-04 support workflow discovery rather than product usability or willingness to pay.
-- I-05 is internal team context and does not count as independent customer validation.
+- Five role-based interview records exist; they provide qualitative workflow evidence but do not validate willingness to pay.
+- Product-feedback and process-discovery evidence must not be represented as paid demand.
 - No exact-price response or paid commitment is currently recorded.
-- Sales has selected ₹2,499 as the single 30-day pilot offer to test; it remains unvalidated until qualified buyers respond.
+- Sales has synchronized on the ₹25,000 INR paid-in-advance, 30-calendar-day pilot offer; it remains unvalidated until qualified buyers respond.
 - No qualified opportunity should be claimed until problem fit, purchase authority, volume, and a concrete next action are confirmed.
 
 ## Submission boundary

@@ -39,7 +39,7 @@ Working hypothesis: small and mid-sized Indian organizations reviewing recurring
 
 ## 9. Business model and pricing
 
-Show the guided evaluation followed by a ₹2,499, 30-day design-partner pilot for one company, one active policy, up to 100 unique claims, five reviewers/admins, and unlimited employee submitters. Explain the unique-claim metric, unit-economics inputs, and evidence standard for retaining or rejecting the price. Label ₹2,499 as an unvalidated test price.
+Show the guided evaluation followed by the active ₹25,000 INR, paid-in-advance, 30-calendar-day design-partner pilot for one organization, one configured reimbursement-policy workflow, up to 10 active reviewers, unlimited employee submitters, and CSV accounting handoff. Explain that usage is measured for future pricing and unit economics, but the pilot itself is fixed-fee. Label ₹25,000 as an unvalidated discovery offer.
 
 ## 10. Alternatives
 
@@ -51,7 +51,7 @@ Prioritize independent product observations, measured reviewer behavior, buyer r
 
 ## 12. Ask
 
-Seek qualified finance or operations design partners willing to complete a guided synthetic-data evaluation and, if the product and safety gates pass, consider the ₹2,499 paid-pilot offer.
+Seek qualified finance or operations design partners willing to complete a guided synthetic-data evaluation and, if the product and safety gates pass, consider the ₹25,000 paid-pilot offer.
 
 ## Demo closing
 

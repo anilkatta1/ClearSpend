@@ -190,7 +190,7 @@ The reviewer must check evidence, understand the purchase, locate the applicable
 
 | H5 | Downloadable decision history helps month-end/audit work. | Two users describe a real evidence need. | Audit export priority. |
 
-| H6 | A qualified buyer will pay ₹2,499 for a 30-day design-partner pilot and explicitly consider ₹2,999/month after it succeeds. | Full-price payment from a named budget decider plus a recorded renewal decision. | Packaging and pricing. |
+| H6 | A qualified buyer will pay ₹25,000 INR in advance for a 30-calendar-day design-partner pilot before ERP integration or payment execution exists. | Signed paid-pilot agreement, purchase order, or payment from a named budget decider. | Packaging and pricing. |
 
 These are hypotheses, not findings. Contradictory evidence must be included.
 
@@ -1392,9 +1392,9 @@ Update after interviews and mark every item as evidence or assumption.
 
 | Costs | Engineering, DB/storage, AI/OCR, observability, support, security, sales. |
 
-| Revenue | Paid design-partner pilot followed by an organization subscription with included unique claims; higher-volume pricing remains unvalidated. |
+| Revenue | Paid design-partner pilot first; future recurring SaaS, implementation services, and premium add-ons remain unvalidated. |
 
-Key commercial hypotheses: value tracks unique claim volume and reviewer effort saved; account pricing with included usage is preferable to seats; acceptable setup is under one hour; accountant distribution is later, not MVP-critical.
+Key commercial hypotheses: value tracks reviewer effort saved, audit/rework risk, and workflow fragmentation; the active paid-pilot offer tests budget commitment before ClearSpend publishes recurring SaaS pricing; accountant distribution is later, not MVP-critical.
 
 ---
 
@@ -1402,7 +1402,7 @@ Key commercial hypotheses: value tracks unique claim volume and reviewer effort 
 
 The canonical pricing and validation detail is in [`docs/pricing.md`](docs/pricing.md).
 
-Every amount and threshold below is a research hypothesis, not validated pricing.
+The active amount and thresholds below are research hypotheses, not validated pricing.
 
 ### Evaluation and test package
 
@@ -1412,47 +1412,17 @@ synthetic or customer-created de-identified claims. This tests usability and tru
 
 not a free production trial and does not count as willingness-to-pay evidence.
 
-**Paid design-partner pilot — ₹2,499 once for 30 days:** one company, one policy, up to
+**Paid design-partner pilot — ₹25,000 INR paid in advance for 30 calendar days:** one organization, one configured reimbursement-policy workflow, up to 10 active reviewers, unlimited employee submitters for the pilot workflow, assisted setup, receipt evidence capture and preview, deterministic checks, bounded AI assistance, policy citations, human review, audit history, CSV accounting handoff, email support, and one results review.
 
-100 unique claims, 5 reviewers/admins, unlimited submitters, assisted setup, citations,
-
-approval trail, CSV export, email support, and one results review.
-
-**Provisional conversion — ₹2,999/company/month:** up to 100 unique claims with the same
-
-account limits and product boundaries. Offer it only after the pilot passes its value and
-
-safety gates. Do not publish a higher-volume tier or automatic overage until usage,
-
-support, and processing costs are measured.
+**Future recurring pricing:** unresolved. Candidate models include an organization platform fee, per-active-reviewer fee, per-submitted-report fee, implementation services, or premium add-ons. Do not publish recurring prices until the paid pilot produces evidence about value, usage, support burden, and buyer preference.
 
 ### Metric and evidence
 
-Use a company subscription with included unique-claim volume: it aligns with the recurring
+Use the paid pilot as a fixed-fee discovery offer, not a metered production plan. Measure unique reports or claims internally when they first reach human-ready review; uploads, retries, edits, information-request cycles, and exports are not separately billable.
 
-job and variable workload, stays predictable, and does not penalize submitter adoption. A
+Ask economic buyers about recent claim volume, reviewer effort and loaded cost, errors, delays, existing spend, and actual purchase authority. Present the exact ₹25,000 offer without hidden customization. The precommitted gate is at least two paid commitments from five qualified economic buyers; one is inconclusive and zero fails the current offer. Compliments, survey intent, and acceptance of the free evaluation are not WTP evidence.
 
-claim counts once when it first reaches human-ready review; uploads, retries, edits,
-
-information-request cycles, and exports are not separately billable.
-
-Ask economic buyers about recent claim volume, reviewer effort and loaded cost, errors,
-
-delays, existing spend, and the actual purchase authority. Present the exact ₹2,499 offer
-
-without hidden customization. One full-price payment supports a pilot; three payments
-
-from twelve qualified buyers support retaining the working price. Compliments, survey
-
-intent, and acceptance of the free evaluation are not WTP evidence.
-
-Measure the pilot against a comparable baseline. Pass requires at least 30% lower median
-
-active reviewer time per completed claim, no material policy error attributable to
-
-ClearSpend, human confirmation of every decision and accounting code, and independently
-
-reproducible billed usage. Simulation results must remain labelled as simulation evidence.
+Measure the pilot against a comparable baseline. Current discovery gates require ClearSpend median active-review time to be at least 20% lower in usability testing, external lookups not to increase, and material decision/coding errors not to increase before the paid offer is made. Simulation results must remain labelled as simulation evidence.
 
 ### Unit economics
 
@@ -1482,17 +1452,9 @@ learning-stage pilot as proof of recurring viability.
 
 ### Rejected alternative
 
-**Per-seat pricing** is rejected initially because occasional approvers and submitters
+**Published recurring SaaS pricing** is rejected initially because the team does not yet have evidence about measured value, usage, buyer preference, or cost-to-serve.
 
-increase adoption, while workload and direct variable cost follow claims more closely.
-
-An unattended free trial is rejected until the product is ready for live financial data,
-
-and outcome pricing is rejected until both parties can define and independently recompute
-
-a real business outcome. Revisit these decisions only when buyer or operational evidence
-
-changes the underlying constraints.
+Per-seat-only pricing is risky because occasional approvers, auditors, and submitters are necessary participants. An unattended free trial is rejected until the product is ready for live financial data, and outcome pricing is rejected until both parties can define and independently recompute a real business outcome. Revisit these decisions only when buyer or operational evidence changes the underlying constraints.
 
 ---
 
@@ -1570,7 +1532,7 @@ Prepare deterministic local mode, screenshots, and a short recording as backups;
 
 ID/date/owner, decision, context, evidence, alternatives, consequences, and revisit trigger.
 
-Seed decisions for the bounded workflow, Indian SMB wedge, Next.js/FastAPI monorepo, Procrastinate without Redis/Kafka, bounded LangGraph workflow, custom Python rule evaluator instead of OPA, human final authority, hybrid assessment, PostgreSQL search before vectors, fake-AI mode, usage-banded subscription, and rejected seat pricing.
+Seed decisions for the bounded workflow, Indian SMB wedge, Next.js/FastAPI monorepo, Procrastinate without Redis/Kafka, bounded LangGraph workflow, custom Python rule evaluator instead of OPA, human final authority, hybrid assessment, PostgreSQL search before vectors, fake-AI mode, fixed-fee paid discovery before recurring pricing, and rejected premature SaaS pricing.
 
 ### AI-collaboration disclosure
 
