@@ -39,6 +39,8 @@ The original interview-writing tool/model identifiers, token counts and billed s
 - Product runtime AI spend during the verified demo: **USD 0.00** (`AI_PROVIDER=fake`).
 - Prashant's development/tool AI spend: **unknown; billing evidence not supplied**. Known activities, usage fields and reconciliation requirements are recorded in [Prashant's AI spend log](evidence/prashant-ai-spend-log.md). Unknown is not zero.
 - Diya's Codex development spend: **USD 16.7903** (reported account-usage total; details in [`docs/evidence/diya-ai-spend-log.md`](evidence/diya-ai-spend-log.md)).
+- Anil's Codex development spend: **estimated USD 186.9646**, with a reconstructed range of **USD 139.2248–186.9646** depending on automated-review billing. This uses exact local project token counters and Diya's observed `gpt-5.6-sol` blended cost as a proxy; it is not an invoice. Details are in [`docs/evidence/anil-ai-spend-log.md`](evidence/anil-ai-spend-log.md).
+- Current documented product-plus-development subtotal: **USD 203.7549**, using Anil's conservative inclusive estimate. Prashant has declared tool use but has not supplied a billed amount; Niraj's usage declaration is not present. Neither unknown amount is assumed to be zero.
 - Local compute and engineering time are not included in the USD figure and must not be represented as zero total cost.
 
-Before final submission, add the actual model/tool identifiers, available token counts, and billed AI amount from the team account.
+Before final submission, obtain billing-owner confirmation for the recorded amounts, add billed spend for Prashant and any usage declared by Niraj, and replace Anil's reconstructed estimate with billed account data if available.
